@@ -3,6 +3,18 @@ Orbiview is a minimalist dashboard system designed to provide real-time data vis
 
 **Python Library**: [Dash](https://dash.plotly.com/)
 
+# How to Run
+
+```bash
+python -m pip install --upgrade pip
+```
+
+```bash
+pip install dash pyserial
+```
+
+Then run this program: `python app.py` 
+
 # Commenting Standards
 
 This project uses Python for embedded systems and follows consistent commenting practices to ensure the code is clear, maintainable, and easy to understand.
