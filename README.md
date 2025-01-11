@@ -5,10 +5,14 @@ Orbiview is a minimalist dashboard system designed to provide real-time data vis
 
 # How to Run
 
+**First**: Make sure you have `pip` installed
+
+Make sure its in the most recent version by updating:
 ```bash
 python -m pip install --upgrade pip
 ```
 
+Install dash package:
 ```bash
 pip install dash pyserial
 ```
