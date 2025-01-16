@@ -7,7 +7,9 @@ Orbiview is a minimalist dashboard system designed to provide real-time data vis
 
 **First**: Make sure you have `pip` installed
 
-**Second activate virtual environment**: 
+**Second**: `python -m venv .venv`
+
+**Third activate virtual environment**: 
 ```bash
 # Windows command prompt
 .venv\Scripts\activate.bat
