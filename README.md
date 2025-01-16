@@ -7,6 +7,18 @@ Orbiview is a minimalist dashboard system designed to provide real-time data vis
 
 **First**: Make sure you have `pip` installed
 
+**Second activate virtual environment**: 
+```bash
+# Windows command prompt
+.venv\Scripts\activate.bat
+
+# Windows PowerShell
+.venv\Scripts\Activate.ps1
+
+# macOS and Linux
+source .venv/bin/activate
+```
+
 Make sure its in the most recent version by updating:
 ```bash
 python -m pip install --upgrade pip
@@ -14,10 +26,10 @@ python -m pip install --upgrade pip
 
 Install dash package:
 ```bash
-pip install dash pyserial
+pip install streamlit
 ```
 
-Then run this program: `python app.py` 
+Then run this program: `streamlit run app.py` 
 
 # Commenting Standards
 
