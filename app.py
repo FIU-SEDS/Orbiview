@@ -49,4 +49,20 @@ with st.container():
         
     with col2:
         st.subheader("Live Feed")
-        
+        df = pd.DataFrame(np.random.randn(50, 20), columns=("col %d" % i for i in range(20)))
+        st.dataframe(df)  # Same as st.write(df)
+
+    with col3:
+        st.subheader("Raw Telemetry")
+        with st.container():
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                altitude = st.empty()
+                velocity = st.empty()
+            with col2:
+                temperature_placeholder = st.empty()
+                pressure_placeholder = st.empty()
+            with col3:
+                signal_strength_placeholder = st.empty()
+                state_placeholder = st.empty()
+                
