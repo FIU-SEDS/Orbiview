@@ -3,19 +3,25 @@ import time
 import numpy as np
 import pandas as pd
 
-st.set_page_config(page_title="Plotting Demo", page_icon="📈")
+st.set_page_config(page_title="Altitude Post-Flight Demo", page_icon="📈")
 
-st.markdown("# Plotting Demo")
-st.sidebar.header("Plotting Demo")
-st.write(
-    """This demo illustrates a combination of plotting and animation with
-Streamlit. We're generating a bunch of random numbers in a loop for around
-5 seconds. Enjoy!"""
-)
+with st.container():
+    st.markdown("# Altitude Post-Flight Data")  
+    st.write(
+        """This demo was used with pandas and streamlit line chart plotting designed for post-flight data that specifically measures altitude respective to the time."""
+    )
 
-height_data = pd.read_csv('../assests/time_height.csv', usecols=['height'])
-time_data = pd.read_csv('../assets/time_height.csv', usecols=['time'])
-chart = st.line_chart(height_data, x=time_data, y_label="Height")
+with st.container():
+    altitude_graph, altitude_data = st.columns([4,1], vertical_alignment='bottom')
+    
+    with altitude_graph:
+        flight_altitude_data = pd.read_csv('assets/time_height.csv', usecols=['time','height'])
+        flight_altitude_data.set_index('time', inplace=True)
+
+        chart = st.line_chart(flight_altitude_data)
+        
+    with altitude_data: 
+        st.dataframe(flight_altitude_data)
 
 
 # Streamlit widgets automatically run the script from top to bottom. Since
