@@ -6,7 +6,6 @@ import time
 import random
 
 st.set_page_config(layout="wide")
-st.sidebar.success("Tabs")
 
 st.logo("assets/FIU_LOGO.png")
 
