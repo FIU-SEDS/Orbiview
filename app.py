@@ -9,89 +9,144 @@ st.set_page_config(layout="wide")
 
 st.logo("assets/FIU_LOGO.png")
 
+tab1, tab2 = st.tabs(["Live Data", "View Info"])
 
-with st.container():
-    col1, col2, col3, col4 = st.columns(4,border=True)
-    
-    with col1:
-        st.subheader("LowG IMU Acceleration")
-        data = np.random.randn(50)
-        st.line_chart(data)
+with tab1:
 
-    with col2:
-        st.subheader("LowG IMU Gyroscope")
-        data = pd.DataFrame(np.random.randn(50, 3), columns=["x", "y", "z"])
-        st.line_chart(data)
+    with st.container():
+        col1, col2, col3, col4 = st.columns(4,border=True)
         
+        with col1:
+            st.subheader("LowG IMU Acceleration")
+            data = np.random.randn(50)
+            st.line_chart(data)
 
-    with col3:
-        st.subheader("Signal Strength (RSSI)")
-        sf_time_data = []
-        signal_strength_data = []
-        graph_placeholder = st.empty()
+        with col2:
+            st.subheader("LowG IMU Gyroscope")
+            data = pd.DataFrame(np.random.randn(50, 3), columns=["x", "y", "z"])
+            st.line_chart(data)
+            
 
-    with col4:
-        st.subheader("GPS Altitude")
-        time_data = []
-        altitude_data = []
-        chart_placeholder = st.empty()
+        with col3:
+            st.subheader("Signal Strength (RSSI)")
+            sf_time_data = []
+            signal_strength_data = []
+            graph_placeholder = st.empty()
+
+        with col4:
+            st.subheader("GPS Altitude")
+            time_data = []
+            altitude_data = []
+            chart_placeholder = st.empty()
 
 
 
-with st.container():
-    col1, col2, col3 = st.columns(3,border=True)
+    with st.container():
+        col1, col2, col3 = st.columns(3,border=True)
 
-    with col1:
-        st.subheader("State Estimation")
-        data = pd.DataFrame(np.random.randn(50, 3), columns=["State1", "State2", "State3"])
-        st.line_chart(data)
+        with col1:
+            st.subheader("State Estimation")
+            data = pd.DataFrame(np.random.randn(50, 3), columns=["State1", "State2", "State3"])
+            st.line_chart(data)
 
-    with col2:
-        st.subheader("Live Feed")
-        camera_html = """
-        <div style="text-align: center;">
-            <video id="video" autoplay style="width: 100%; max-width: 600px; border: 1px solid black;"></video>
-        </div>
-        <script>
-            async function startCamera() {
-                const video = document.getElementById('video');
-                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                    try {
-                        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                        video.srcObject = stream;
-                    } catch (error) {
-                        console.error("Camera access denied or not available:", error);
+        with col2:
+            st.subheader("Live Feed")
+            camera_html = """
+            <div style="text-align: center;">
+                <video id="video" autoplay style="width: 100%; max-width: 600px; border: 1px solid black;"></video>
+            </div>
+            <script>
+                async function startCamera() {
+                    const video = document.getElementById('video');
+                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                        try {
+                            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                            video.srcObject = stream;
+                        } catch (error) {
+                            console.error("Camera access denied or not available:", error);
+                        }
+                    } else {
+                        console.error("getUserMedia not supported by this browser.");
                     }
-                } else {
-                    console.error("getUserMedia not supported by this browser.");
                 }
-            }
-            startCamera();
-        </script>
-        """
-        st.components.v1.html(camera_html, height=400)
+                startCamera();
+            </script>
+            """
+            st.components.v1.html(camera_html, height=400)
 
-    with col3:
-        st.subheader("Raw Telemetry")
-        with st.container():
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                altitude_placeholder = st.empty()
-                velocity_placeholder = st.empty()
-            with col2:
-                temperature_placeholder = st.empty()
-                pressure_placeholder = st.empty()
-            with col3:
-                signal_strength_placeholder = st.empty()
-                state_placeholder = st.empty()
+        with col3:
+            st.subheader("Raw Telemetry")
+            with st.container():
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    altitude_placeholder = st.empty()
+                    velocity_placeholder = st.empty()
+                with col2:
+                    temperature_placeholder = st.empty()
+                    pressure_placeholder = st.empty()
+                with col3:
+                    signal_strength_placeholder = st.empty()
+                    state_placeholder = st.empty()
 
-    
-with st.container():
+        
+    with st.container():
 
-    # Rocket Stages
-    stages = ["Init", "Idle", "Boost", "Coast", "Apogee", "Drogue", "Main Chute", "Landed"]
-    stage_placeholder = st.empty()  # Placeholder for stage text
-    progress_bar = st.progress(0)   # Progress bar at the bottom
+        # Rocket Stages
+        stages = ["Init", "Idle", "Boost", "Coast", "Apogee", "Drogue", "Main Chute", "Landed"]
+        stage_placeholder = st.empty()  # Placeholder for stage text
+        progress_bar = st.progress(0)   # Progress bar at the bottom
+
+
+with tab2:
+    data = st.file_uploader("Choose CSV File to Read",type='csv')
+    if data is not None:
+        tab1, tab2, tab3 = st.tabs(["Height","Speed","Temperature"])
+        with tab1:
+            df = pd.read_csv(data, usecols=['time','height'])
+            df.set_index('time', inplace=True)
+            st.header("Height Chart")
+            chart = st.line_chart(df)
+        with tab2:
+            data.seek(0)
+            df = pd.read_csv(data, usecols=['time','speed'])
+            df.set_index('time', inplace=True)
+            st.header("Speed Chart:")
+            chart = st.line_chart(df)
+        with tab3:
+            data.seek(0)
+            df = pd.read_csv(data, usecols=['time','temperature'])
+            df.set_index('time', inplace=True)
+            st.header("Temperature Chart:")
+            chart = st.line_chart(df)
+
+        
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            data.seek(0)
+            h = pd.read_csv(data, usecols=['height'])  
+            max_height = h['height'].max() 
+            st.metric(label="Max Height", value=max_height)
+            
+        with col2:
+            data.seek(0) 
+            s = pd.read_csv(data, usecols=['speed'])  
+            max_speed = s['speed'].max()
+            st.metric(label="Max Speed", value=max_speed)
+
+        with col3:
+            data.seek(0) 
+            s = pd.read_csv(data, usecols=['temperature'])  
+            avg_temp = s['temperature'].mean()
+            st.metric(label="Average Temperature", value=avg_temp)
+        
+        with col4:
+            data.seek(0) 
+            s = pd.read_csv(data, usecols=['time'])  
+            total_time = s['time'].max()
+            st.metric(label="Total time", value=total_time)
+
+
 
 
 
