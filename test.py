@@ -28,7 +28,7 @@ for i in range(20):
 app.layout = html.Div([
     # Background video
     html.Video(
-        src="/assets/background.mp4",  # Use local video in the assets folder
+        src="/assets/rocket.mp4",  # Use local video in the assets folder
         autoPlay=True,
         loop=True,
         muted=True,
