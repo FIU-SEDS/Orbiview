@@ -14,6 +14,13 @@ st.logo("assets/FIU_LOGO.png")
 
 
 # Sidebar navigation
+# This is to shorten the sidebar
+st.markdown(f'''
+    <style>
+        section[data-testid="stSidebar"] .css-ng1t4o {{width: 14rem;}}
+        section[data-testid="stSidebar"] .css-1d391kg {{width: 10rem;}}
+    </style>
+''',unsafe_allow_html=True)
 st.sidebar.title("Navigation")
 page = st.sidebar.radio("Pages", ["Live Data Feed", "CSV Data Analysis"])
 
@@ -24,19 +31,21 @@ if page == "Live Data Feed":
         col1, col2, col3 = st.columns(3,border=True)
         
         with col1:
-            st.subheader("LowG IMU Acceleration")
+            st.subheader("IMU Acceleration")
             data = np.random.randn(50)
             st.line_chart(data)
 
         with col2:
-            st.subheader("GPS Altitude")
+            st.subheader("Altitude")
             time_data = []
             altitude_data = []
             chart_placeholder = st.empty()
             
 
         with col3:
-            plot_placeholder = st.empty()
+            st.subheader("Speed")
+            data = np.random.randn(50)
+            st.line_chart(data)
 
 
 
@@ -50,9 +59,8 @@ if page == "Live Data Feed":
             graph_placeholder = st.empty()
 
         with col2:
-            st.subheader("Speed")
-            data = np.random.randn(50)
-            st.line_chart(data)
+            plot_placeholder = st.empty()
+
 
         with col3:
             st.subheader("Raw Telemetry")
