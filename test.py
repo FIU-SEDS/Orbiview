@@ -28,7 +28,7 @@ for i in range(20):
 app.layout = html.Div([
     # Background video
     html.Video(
-        src="/assets/background.mp4",  # Use local video in the assets folder
+        src="/assets/rocket.mp4",  # Use local video in the assets folder
         autoPlay=True,
         loop=True,
         muted=True,
@@ -42,72 +42,76 @@ app.layout = html.Div([
             'width': 'auto',
             'height': 'auto',
             'z-index': '-1',
-            'object-fit': 'cover'  # Ensure the video fits well without being overly zoomed
+            'object-fit': 'cover'
         }
     ),
     
-    # Top left telemetry data
+    # Vertical timeline on the left
     html.Div([
-        html.Div([
-            html.H4("TELEMETRY", style={'color': 'white', 'margin-bottom': '10px'}),
-            html.Div([
-                html.Div([
-                    html.H6("SPEED", style={'color': 'white', 'margin-bottom': '5px'}),
-                    html.H3(id='speed', style={'color': 'white'}),
-                ], style={'padding': '0 20px', 'text-align': 'center'}),
-                html.Div([
-                    html.H6("ALTITUDE", style={'color': 'white', 'margin-bottom': '5px'}),
-                    html.H3(id='altitude', style={'color': 'white'}),
-                ], style={'padding': '0 20px', 'text-align': 'center'}),
-            ])
-        ], style={'margin-bottom': '20px'}),
-        
-        # Stage information below telemetry
-        html.Div([
-            html.H4("CURRENT STAGE", style={'color': 'white', 'margin-bottom': '10px'}),
-            html.H3(id='rocket-stage', style={'color': 'white'}),
-        ])
+        html.Div("APOGEE", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
+        html.Div("RE-ENTRY", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
+        html.Div("DROGUES", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
+        html.Div("TOUCHDOWN", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'})
     ], style={
-        'position': 'absolute', 'top': '0', 'left': '0',
-        'background': 'rgba(0, 0, 0, 0.6)', 'padding': '20px',
-        'border-radius': '10px', 'margin': '10px'
+        'position': 'absolute', 'top': '10%', 'left': '10px',
+        'height': '80%', 'display': 'flex', 'flex-direction': 'column',
+        'justify-content': 'space-between', 'align-items': 'center',
+        'font-size': '16px', 'font-weight': 'bold'
     }),
 
-    # Bottom center elapsed mission time, positioned over the black bar
+    # Bottom telemetry data
     html.Div([
-        html.H1("T+ 00:00:02", id='mission-time', style={'color': 'white', 'font-size': '36px', 'margin-bottom': '0'})
+        html.Div([
+            html.Div("CAPSULE VELOCITY", style={'color': 'white', 'font-size': '14px'}),
+            html.H3(id='speed', style={'color': 'white'})
+        ], style={'text-align': 'center', 'padding': '0 20px'}),
+        html.Div([
+            html.Div("CAPSULE ALTITUDE", style={'color': 'white', 'font-size': '14px'}),
+            html.H3(id='altitude', style={'color': 'white'})
+        ], style={'text-align': 'center', 'padding': '0 20px'})
     ], style={
-        'position': 'absolute', 'bottom': '60px', 'left': '50%',
-        'transform': 'translateX(-50%)', 'z-index': '2',  # Higher z-index to bring it to the front
-        'text-align': 'center', 'background': 'rgba(0, 0, 0, 0.7)'
+        'position': 'absolute', 'bottom': '20px', 'left': '50%',
+        'transform': 'translateX(-50%)', 'display': 'flex',
+        'gap': '50px', 'background': 'rgba(0, 0, 0, 0.6)',
+        'padding': '10px 20px', 'border-radius': '10px'
     }),
 
-    # Rocket stage progress bar
+    # Bottom right mission time
     html.Div([
-        html.Div("LAUNCH: FIU SEDS Sub-Scale", style={'color': 'white', 'font-weight': 'bold', 'font-size': '24px'}),
+        html.H1("T+ 00:00:02", id='mission-time', style={'color': 'white', 'font-size': '36px'})
     ], style={
-        'position': 'absolute', 'bottom': '0', 'left': '0', 'width': '100%',
-        'padding': '10px', 'background': 'rgba(0, 0, 0, 0.7)', 'color': 'white',
-        'text-align': 'center', 'height':'50px'  
-    })
+        'position': 'absolute', 'bottom': '20px', 'right': '20px',
+        'background': 'rgba(0, 0, 0, 0.7)', 'padding': '10px',
+        'border-radius': '5px'
+    }),
+   
+    html.Img(
+    src="/assets/FIU_logo.png",  
+    style={
+        'position': 'absolute',
+        'top': '10px',
+        'right': '10px',
+        'width': '100px',  
+        'height': 'auto',
+        'z-index': '10',
+        'opacity': '0.5',
+    }
+),
 ])
 
-# Callback to update telemetry data and current stage
 @app.callback(
     [
         dash.dependencies.Output('altitude', 'children'),
         dash.dependencies.Output('speed', 'children'),
-        dash.dependencies.Output('rocket-stage', 'children'),
         dash.dependencies.Output('mission-time', 'children')
     ],
     [dash.dependencies.Input('interval-component', 'n_intervals')]
 )
 def update_data(n):
-    # Simulate new data for each update
+    
     current_time = time.time() - start_time
     new_altitude = random.uniform(0, 100)  # Random altitude between 0 and 100
     new_speed = random.uniform(0, 50)  # Random speed between 0 and 50
-    current_state = random.choice(rocket_states)
     elapsed_time = f"T+ {int(current_time // 60):02}:{int(current_time % 60):02}:{int((current_time % 1) * 100):02}"
 
     # Append new data to the lists
@@ -115,9 +119,9 @@ def update_data(n):
     altitudes.append(new_altitude)
     speeds.append(new_speed)
 
-    return f"{new_altitude:.2f} km", f"{new_speed:.2f} km/h", current_state, elapsed_time
+    return f"{new_speed:.0f} MPH", f"{new_altitude:.0f} FT", elapsed_time
 
-# Add the interval component for updating the data
+
 app.layout.children.append(
     dcc.Interval(
         id='interval-component',
