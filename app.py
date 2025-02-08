@@ -92,7 +92,7 @@ app.layout = html.Div([
     }),
    
     html.Img(
-    src="/assets/FIU_logo.png",  
+    src="/assets/seds.png",  
     style={
         'position': 'absolute',
         'top': '10px',
