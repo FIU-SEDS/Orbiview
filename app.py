@@ -1,5 +1,4 @@
 import dash
-import dash_leaflet as dl
 from dash import dcc, html
 import plotly.graph_objs as go
 import random
@@ -92,7 +91,7 @@ html.Div([
             html.H3(id='altitude', style={'color': 'white'})
         ], style={'text-align': 'center', 'padding': '0 20px'})
     ], style={
-        'position': 'absolute', 'bottom': '20px', 'left': '15%',
+        'position': 'absolute', 'bottom': '20px', 'left': '240px',
         'transform': 'translateX(-50%)', 'display': 'flex',
         'gap': '50px', 'background': 'rgba(0, 0, 0, 0.1)',
         'padding': '5px 20px', 'border-radius': '10px', 
@@ -108,7 +107,7 @@ html.Div([
     }),
 
     # Logo
-    html.Img(src="/assets/seds.png", style={'position': 'absolute', 'top': '10px', 'right': '10px', 'width': '100px'}),
+    html.Img(src="/assets/seds.png", style={'position': 'absolute', 'top': '10px', 'right': '10px', 'width': '100px', 'opacity' : '0.5'}),
 
     # Interval component for real-time updates
     dcc.Interval(id='interval-component', interval=1000, n_intervals=0)
