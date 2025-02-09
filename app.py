@@ -12,24 +12,24 @@ app = dash.Dash(__name__)
 times = []
 altitudes = []
 speeds = []
-rocket_states = ["Idle", "Ascending", "Coasting", "Descending", "Landed"]
+rocket_states = ["Idle", "Boost", "Apogee", "Drogue", "Main", "Landed"]
 
 # Simulate some initial data for testing
 start_time = time.time()
 for i in range(20):
     current_time = time.time() - start_time
-    altitude = random.uniform(0, 100)  # Random altitude value between 0 and 100
-    speed = random.uniform(0, 50)  # Random speed between 0 and 50
+    altitude = random.uniform(0, 100)
+    speed = random.uniform(0, 50)
     times.append(current_time)
     altitudes.append(altitude)
     speeds.append(speed)
-    time.sleep(0.1)  # Simulate a small delay between measurements
+    time.sleep(0.1)
 
 # Layout of the Dashboard
 app.layout = html.Div([
     # Background video
     html.Video(
-        src="/assets/rocket.mp4",  # Use local video in the assets folder
+        src="/assets/rocket.mp4",
         autoPlay=True,
         loop=True,
         muted=True,
@@ -46,10 +46,10 @@ app.layout = html.Div([
             'object-fit': 'cover'
         }
     ),
-    
 
-    
-    # Vertical timeline on the left
+    # Vertical timeline and progress bar
+html.Div([
+    # Text Labels
     html.Div([
         html.Div("INIT", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
         html.Div("IDLE", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
@@ -63,6 +63,22 @@ app.layout = html.Div([
         'height': '80%', 'display': 'flex', 'flex-direction': 'column',
         'justify-content': 'space-between', 'align-items': 'center',
         'font-size': '12px', 'font-weight': 'bold'
+    }),
+
+    # Progress Bar (Shifted right)
+    html.Div([
+        html.Div(id="progress-bar", style={
+            'width': '10px', 'height': '10%', 'background-color': 'white',
+            'transition': 'height 0.5s ease-in-out'
+        })
+    ], style={
+        'width': '10px', 'height': '100%', 'display': 'flex', 'align-items': 'flex-end',
+        'border': '2px solid white',
+        'margin-left': '30px'  # Adjusted for spacing
+    })
+    ], style={
+        'position': 'absolute', 'top': '4%', 'left': '10px', 'height': '80%',
+        'display': 'flex', 'flex-direction': 'row', 'align-items': 'center'
     }),
 
     # Bottom telemetry data
@@ -82,29 +98,39 @@ app.layout = html.Div([
         'padding': '5px 20px', 'border-radius': '10px', 
     }),
 
-    # Bottom right mission time
+    # Mission time
     html.Div([
-        html.H1("T+ 00:00:02", id='mission-time', style={'color': 'white', 'font-size': '30px'})
+        html.H1("T+ 00:00:02", id='mission-time')
     ], style={
         'position': 'absolute', 'bottom': '20px', 'right': '20px',
-        'background': 'rgba(0, 0, 0, 0.1)',
-        'padding': '10px 20px', 'border-radius': '10px'
+        'background': 'rgba(0, 0, 0, 0.1)', 'padding': '10px 20px',
+        'border-radius': '10px', 'color': 'white'
     }),
-   
-    html.Img(
-    src="/assets/seds.png",  
-    style={
-        'position': 'absolute',
-        'top': '10px',
-        'right': '10px',
-        'width': '100px',  
-        'height': 'auto',
-        'z-index': '10',
-        'opacity': '0.5',
-    }
-),
+
+    # Logo
+    html.Img(src="/assets/seds.png", style={'position': 'absolute', 'top': '10px', 'right': '10px', 'width': '100px'}),
+
+    # Interval component for real-time updates
+    dcc.Interval(id='interval-component', interval=1000, n_intervals=0)
 ])
 
+# Callback for updating progress bar
+@app.callback(
+    dash.dependencies.Output('progress-bar', 'style'),
+    [dash.dependencies.Input('interval-component', 'n_intervals')]
+)
+def update_progress(n):
+    stage_progress = {
+        "Idle": 100, "Boost": 85, "Apogee": 68, "Drogue": 51, "Main": 34, "Landed": 17
+    }
+    current_stage = random.choice(list(stage_progress.keys()))
+
+    return {
+        'width': '10px', 'height': f"{stage_progress[current_stage]}%",
+        'background-color': 'white', 'transition': 'height 0.5s ease-in-out'
+    }
+
+# Callback for updating telemetry data
 @app.callback(
     [
         dash.dependencies.Output('altitude', 'children'),
@@ -114,29 +140,18 @@ app.layout = html.Div([
     [dash.dependencies.Input('interval-component', 'n_intervals')]
 )
 def update_data(n):
-    
     current_time = time.time() - start_time
-    new_altitude = random.uniform(0, 100)  # Random altitude between 0 and 100
-    new_speed = random.uniform(0, 50)  # Random speed between 0 and 50
+    new_altitude = random.uniform(0, 100)
+    new_speed = random.uniform(0, 50)
     elapsed_time = f"T+ {int(current_time // 60):02}:{int(current_time % 60):02}:{int((current_time % 1) * 100):02}"
 
-    # Append new data to the lists
     times.append(current_time)
     altitudes.append(new_altitude)
     speeds.append(new_speed)
 
     return f"{new_speed:.0f} MPH", f"{new_altitude:.0f} FT", elapsed_time
 
-
-app.layout.children.append(
-    dcc.Interval(
-        id='interval-component',
-        interval=1000,  # in milliseconds
-        n_intervals=0
-    )
-)
-
 # Run the Dash app
 if __name__ == '__main__':
-    # app.run_server(debug=True) # uncomment this if you need to debug to make the blue ball with debug features appear
     app.run_server(debug=False)
+    
