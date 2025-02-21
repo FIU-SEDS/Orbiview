@@ -1,4 +1,4 @@
-import serial
+import serial # install pyserial for reading serial port
 import pandas as pd
 
 arduino = serial.Serial(port=' ', baudrate = 115200, timeout = 0.1)
