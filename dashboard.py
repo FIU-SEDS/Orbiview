@@ -70,11 +70,19 @@ if page == "Live Data Feed":
             accel_placeholder.line_chart(df.set_index("Time")["Acceleration"])
             signal_placeholder.line_chart(df.set_index("Time")["RSSI"])
             
-            altitude_metric.metric("Altitude (m)", f"{latest_data['Altitude']:.2f}")
-            speed_metric.metric("Speed (m/s)", f"{latest_data['speed']:.2f}")
-            acceleration_metric.metric("Acceleration (m/s²)", f"{latest_data['acceleration']:.2f}")
-            pressure_metric.metric("Pressure (hPa)", f"{latest_data['pressure']:.2f}")
-            signal_strength_metric.metric("Signal Strength (%)", f"{latest_data['RSSI']}")
+            altitude_value = latest_data.get("Altitude", None)
+            speed_value = latest_data.get("Speed", None)
+            acceleration_value = latest_data.get("Acceleration", None)
+            pressure_value = latest_data.get("Pressure", None)
+            signal_strength_value = latest_data.get("RSSI", None)
+
+            #BASICALLY IF BLANK IT LEAVES BLANK
+            altitude_metric.metric("Altitude (m)", f"{altitude_value:.2f}" if altitude_value is not None else "N/A")
+            speed_metric.metric("Speed (m/s)", f"{speed_value:.2f}" if speed_value is not None else "N/A")
+            acceleration_metric.metric("Acceleration (m/s²)", f"{acceleration_value:.2f}" if acceleration_value is not None else "N/A")
+            pressure_metric.metric("Pressure (hPa)", f"{pressure_value:.2f}" if pressure_value is not None else "N/A")
+            signal_strength_metric.metric("Signal Strength (%)", signal_strength_value if signal_strength_value is not None else "N/A")
+
             
             rocket_angle = latest_data.get("angle", 0)  #ROCKET ANGLE, INPUT CALCULATE idk how to calculate
             fig = plot_rocket(rocket_angle)
