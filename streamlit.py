@@ -12,7 +12,7 @@ st.sidebar.title("Navigation")
 page = st.sidebar.radio("Pages", ["Live Data Feed", "CSV Data Analysis"])
 
 if page == "Live Data Feed":
-    csv_file = "data.csv"  # Path to the CSV file
+    csv_file = "parsed_data.csv"  # Path to the CSV file
 
     with st.container():
         col1, col2, col3 = st.columns(3, border=True)
@@ -66,9 +66,9 @@ if page == "Live Data Feed":
 
             latest_data = df.iloc[-1]  
             
-            altitude_placeholder.line_chart(df.set_index("time")["altitude"])
-            accel_placeholder.line_chart(df.set_index("time")["acceleration"])
-            signal_placeholder.line_chart(df.set_index("time")["rssi"])
+            altitude_placeholder.line_chart(df.set_index("Time")["Altitude"])
+            accel_placeholder.line_chart(df.set_index("Time")["Acceleration"])
+            signal_placeholder.line_chart(df.set_index("Time")["RSSI"])
             
             altitude_metric.metric("Altitude (m)", f"{latest_data['altitude']:.2f}")
             speed_metric.metric("Speed (m/s)", f"{latest_data['speed']:.2f}")
@@ -94,15 +94,15 @@ elif page == "CSV Data Analysis":
         
         with tab1:
             st.header("Altitude Chart")
-            st.line_chart(df.set_index("time")["altitude"])
+            st.line_chart(df.set_index("Time")["Altitude"])
         
         with tab2:
             st.header("Acceleration Chart")
-            st.line_chart(df.set_index("time")["acceleration"])
+            st.line_chart(df.set_index("Time")["Acceleration"])
         
         with tab3:
             st.header("Signal Strength Chart")
-            st.line_chart(df.set_index("time")["rssi"])
+            st.line_chart(df.set_index("Time")["RSSI"])
         
         col1, col2, col3 = st.columns(3)
         with col1:
