@@ -70,11 +70,11 @@ if page == "Live Data Feed":
             accel_placeholder.line_chart(df.set_index("Time")["Acceleration"])
             signal_placeholder.line_chart(df.set_index("Time")["RSSI"])
             
-            altitude_metric.metric("Altitude (m)", f"{latest_data['altitude']:.2f}")
+            altitude_metric.metric("Altitude (m)", f"{latest_data['Altitude']:.2f}")
             speed_metric.metric("Speed (m/s)", f"{latest_data['speed']:.2f}")
             acceleration_metric.metric("Acceleration (m/s²)", f"{latest_data['acceleration']:.2f}")
             pressure_metric.metric("Pressure (hPa)", f"{latest_data['pressure']:.2f}")
-            signal_strength_metric.metric("Signal Strength (%)", f"{latest_data['rssi']}")
+            signal_strength_metric.metric("Signal Strength (%)", f"{latest_data['RSSI']}")
             
             rocket_angle = latest_data.get("angle", 0)  #ROCKET ANGLE, INPUT CALCULATE idk how to calculate
             fig = plot_rocket(rocket_angle)
