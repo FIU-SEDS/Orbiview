@@ -3,7 +3,8 @@ import serial
 import time
 
 #setting up a serial connection (port and baud rate)
-ser = serial.Serial(port='/dev/cu.usbmodem1101', baudrate=9600, timeout=1)
+# ser = serial.Serial(port='/dev/cu.usbmodem1101', baudrate=9600, timeout=1) # mac
+ser = serial.Serial(port='COM8', baudrate=9600, timeout=1) # windows
 time.sleep(2)
 
 output_csv = "parsed_data.csv"
