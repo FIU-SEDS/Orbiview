@@ -37,11 +37,22 @@ if page == "Live Data Feed":
 
         with col2:
             st.subheader("Raw Telemetry")
-            altitude_metric = st.metric("Altitude (m)", "-")
-            speed_metric = st.metric("Speed (m/s)", "-")
-            acceleration_metric = st.metric("Acceleration (m/s²)", "-")
-            pressure_metric = st.metric("Pressure (hPa)", "-")
-            signal_strength_metric = st.metric("Signal Strength (%)", "-")
+            with st.container():
+                col1, col2, col3 = st.columns(3,border=False)
+
+                with col1:
+                    altitude_metric = st.metric("Altitude (m)", "-")
+                    speed_metric = st.metric("Speed (m/s)", "-")
+
+                with col2:
+                    acceleration_metric = st.metric("Acceleration (m/s²)", "-")
+                    pressure_metric = st.metric("Pressure (hPa)", "-")
+
+                with col3:
+                    signal_strength_metric = st.metric("Signal Strength (%)", "-")
+
+
+            
     
     def plot_rocket(angle):
         fig, ax = plt.subplots(figsize=(2, 2), facecolor='none')
