@@ -124,16 +124,11 @@ app.layout = html.Div([
         html.Div([
             html.Div("ACCELERATION", style={'color': 'white', 'font-size': '14px'}),
             html.H3(id='acceleration', style={'color': 'white'})
-        ], style={'text-align': 'center', 'padding': '0 20px'}),
-        html.Div([
-            html.Div("SIGNAL", style={'color': 'white', 'font-size': '14px'}),
-            html.H3(id='signal', style={'color': 'white'})
         ], style={'text-align': 'center', 'padding': '0 20px'})
     ], style={
-        'position': 'absolute', 'bottom': '20px', 'left': '50%',
-        'transform': 'translateX(-50%)', 'display': 'flex',
-        'gap': '50px', 'background': 'rgba(0, 0, 0, 0.1)',
-        'padding': '5px 20px', 'border-radius': '10px', 
+        'position': 'absolute', 'bottom': '20px', 'left': '60px',
+        'display': 'flex', 'gap': '50px', 'background': 'rgba(0, 0, 0, 0.1)',
+        'padding': '5px 20px', 'border-radius': '10px',
     }),
 
     # Mission time
@@ -145,14 +140,7 @@ app.layout = html.Div([
         'border-radius': '10px', 'color': 'white'
     }),
 
-    # Rocket state indicator
-    html.Div([
-        html.H2("STATE: IDLE", id='rocket-state')
-    ], style={
-        'position': 'absolute', 'top': '20px', 'left': '130px',
-        'background': 'rgba(0, 0, 0, 0.1)', 'padding': '10px 20px',
-        'border-radius': '10px', 'color': 'white'
-    }),
+
 
     # Logo
     html.Img(src="/assets/seds.png", style={'position': 'absolute', 'top': '10px', 'right': '10px', 'width': '100px', 'opacity': '0.5'}),
@@ -163,8 +151,7 @@ app.layout = html.Div([
 
 # Callback for updating progress bar and rocket state
 @app.callback(
-    [dash.dependencies.Output('progress-bar', 'style'),
-     dash.dependencies.Output('rocket-state', 'children')],
+    dash.dependencies.Output('progress-bar', 'style'),
     [dash.dependencies.Input('interval-component', 'n_intervals')]
 )
 def update_progress(n):
@@ -187,21 +174,20 @@ def update_progress(n):
     return {
         'width': '10px', 'height': f"{progress_height}%",
         'background-color': 'white', 'transition': 'height 0.5s ease-in-out'
-    }, f"STATE: {current_state}"
+    }
 
 # Callback for updating telemetry data
 @app.callback(
     [
         dash.dependencies.Output('altitude', 'children'),
         dash.dependencies.Output('acceleration', 'children'),
-        dash.dependencies.Output('signal', 'children'),
         dash.dependencies.Output('mission-time', 'children')
     ],
     [dash.dependencies.Input('interval-component', 'n_intervals')]
 )
 def update_data(n):
     # Read latest data
-    altitude, acceleration, time_val, rssi, snr = read_latest_data()
+    altitude, acceleration, time_val, _, _ = read_latest_data()
     
     # Format mission time
     if time_val is not None:
@@ -216,10 +202,7 @@ def update_data(n):
     altitude_str = f"{altitude:.2f} FT" if altitude is not None else "N/A"
     accel_str = f"{acceleration:.2f} G" if acceleration is not None else "N/A"
     
-    # Format signal information
-    signal_str = f"{rssi} dBm / {snr} SNR" if rssi is not None and snr is not None else "N/A"
-    
-    return altitude_str, accel_str, signal_str, elapsed_time
+    return altitude_str, accel_str, elapsed_time
 
 # Run the Dash app
 if __name__ == '__main__':
