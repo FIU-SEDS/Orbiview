@@ -87,7 +87,7 @@ if page == "Live Data Feed":
     
     with st.container(border=True):
         st.markdown("<h3 style='text-align: center;'>Telemetry</h3>", unsafe_allow_html=True)
-        col1, col2, col3, col4, col5, col6, col7 = st.columns(7, border=False)
+        col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8, border=False)
 
         with col1:
             acceler_x_metric = st.metric("Acceleration X","-")
@@ -109,6 +109,9 @@ if page == "Live Data Feed":
 
         with col7:
             time_metric = st.metric("Time","-")
+
+        with col8:
+            state_metric = st.metric("State","-")
 
 
     with st.container():
@@ -198,6 +201,20 @@ if page == "Live Data Feed":
 
             time_metric.metric("Time", latest_time if latest_time is not None else "N/A")
         
+            latest_state = latest_data.get("rocket_state", -1)
+            state_names = {
+                0: "INIT",
+                1: "IDLE",
+                2: "BOOST",
+                3: "APOGEE",
+                4: "DROGUE_DEPLOY",
+                5: "MAIN_DEPLOY",
+                6: "LANDED"
+            }
+
+            state_name = state_names.get(latest_state, "UNKNOWN")
+            state_metric.metric("State", state_name)
+
             time.sleep(1)
         except Exception as e:
             st.error(f"Error reading CSV: {e}")
