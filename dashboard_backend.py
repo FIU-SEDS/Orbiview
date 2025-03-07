@@ -6,7 +6,8 @@ import matplotlib.transforms as transforms
 import time
 
 st.set_page_config(layout="wide")
-st.logo("assets/FIU_logo.png")
+st.logo("assets/FIU_LOGO.png")
+
 st.sidebar.title("Navigation")
 page = st.sidebar.radio("Pages", ["Live Data Feed", "CSV Data Analysis"])
 
