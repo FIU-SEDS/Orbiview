@@ -1,18 +1,18 @@
-#Orbview (EXE edition)
+# Orbview (EXE edition)
 
-#To Run
+# To Run
 
 ```bash
 python sensor_dashboard.py
 ```
 
-#Make EXE file
+# Make EXE file
 
 ```bash
 python -m PyInstaller --onefile --windowed --icon=dashboard_icon.ico sensor_dashboard.py
 ```
 
-#Requirements
+# Requirements
 
 Needs to Have the following:
 PyQt6 pyqtgraph numpy pyinstaller
