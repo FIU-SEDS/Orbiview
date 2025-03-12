@@ -121,14 +121,18 @@ app.layout = html.Div([
             html.Div("ALTITUDE", style={'color': 'white', 'font-size': '14px'}),
             html.H3(id='altitude', style={'color': 'white'})
         ], style={'text-align': 'center', 'padding': '0 20px'}),
+
+        html.Div(style={'border-left': '3px solid white', 'height': '70px'}),
+            
+
         html.Div([
             html.Div("ACCELERATION", style={'color': 'white', 'font-size': '14px'}),
             html.H3(id='acceleration', style={'color': 'white'})
         ], style={'text-align': 'center', 'padding': '0 20px'})
     ], style={
         'position': 'absolute', 'bottom': '20px', 'left': '60px',
-        'display': 'flex', 'gap': '50px', 'background': 'rgba(0, 0, 0, 0.1)',
-        'padding': '5px 20px', 'border-radius': '10px',
+        'display': 'flex', 'gap': '50px',
+        'padding': '5px 100px', 'border-radius': '10px',
     }),
 
     # Mission time
@@ -136,8 +140,8 @@ app.layout = html.Div([
         html.H1("T+ 00:00:00", id='mission-time')
     ], style={
         'position': 'absolute', 'bottom': '20px', 'right': '20px',
-        'background': 'rgba(0, 0, 0, 0.1)', 'padding': '10px 20px',
-        'border-radius': '10px', 'color': 'white'
+        'padding': '10px 20px',
+        'border-radius': '10px', 'color': 'white','font-size': '24px',
     }),
 
 
@@ -147,6 +151,7 @@ app.layout = html.Div([
 
     # Interval component for real-time updates
     dcc.Interval(id='interval-component', interval=500, n_intervals=0)  # Check every 500ms
+    
 ])
 
 # Callback for updating progress bar and rocket state
