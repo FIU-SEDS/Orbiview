@@ -12,7 +12,7 @@ import pyqtgraph as pg
 class SerialThread(QThread):
     data_received = pyqtSignal(list)
     
-    def __init__(self, port='COM9', baudrate=9600):
+    def __init__(self, port='COM13', baudrate=115200):
         super().__init__()
         self.port = port
         self.baudrate = baudrate
@@ -59,8 +59,8 @@ class SerialThread(QThread):
             try:
                 if ser.in_waiting:
                     line = ser.readline().decode('utf-8').strip()  # Read and decode serial data
-                    if "Received: +RCV=" in line:
-                        clean_data = line.replace("Received: +RCV=", "")
+                    if "+RCV=" in line:
+                        clean_data = line.replace("+RCV=", "")  # FOR OLD CODE IT IS Received: +RCV=
                         data_values = clean_data.split(',')
                         
                         # Parse data values
@@ -111,7 +111,7 @@ class SerialThread(QThread):
         self.wait()
 
 class SensorDashboard(QMainWindow):
-    def __init__(self, serial_port='COM9', baudrate=9600):
+    def __init__(self, serial_port='COM13', baudrate=115200):
         super().__init__()
         
         # Set window title and size
@@ -438,7 +438,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     
     # Change this to match your serial port
-    window = SensorDashboard(serial_port='COM9', baudrate=9600)
+    window = SensorDashboard(serial_port='COM13', baudrate=115200)
     window.show()
     
     sys.exit(app.exec())
