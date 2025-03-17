@@ -4,7 +4,7 @@ import time
 
 #setting up a serial connection (port and baud rate)
 # ser = serial.Serial(port='/dev/cu.usbmodem1101', baudrate=9600, timeout=1) # mac
-ser = serial.Serial(port='COM9', baudrate=9600, timeout=1) # windows
+ser = serial.Serial(port='COM13', baudrate=115200, timeout=1) # windows
 time.sleep(2)
 
 output_csv = "parsed_data.csv"
@@ -18,8 +18,8 @@ print("Waiting for LoRa data...")
 try:
     while True: 
         line = ser.readline().decode('utf-8').strip()  # Read and decode serial data
-        if "Received: +RCV=" in line:
-            clean_data = line.replace("Received: +RCV=", "")
+        if "+RCV=" in line:
+            clean_data = line.replace("+RCV=", "")
             data_values = clean_data.split(',')
 
             acceleration_x = data_values[2]
