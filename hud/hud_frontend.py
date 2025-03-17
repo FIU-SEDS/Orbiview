@@ -12,7 +12,7 @@ app = dash.Dash(__name__)
 CSV_FILE_PATH = 'parsed_data.csv'
 
 # Define rocket states
-rocket_states = ["Idle", "Boost", "Apogee", "Drogue", "Main", "Landed"]
+rocket_states = ["INIT","Idle", "Boost", "Apogee", "Drogue", "Main", "Landed"]
 
 # Function to read the latest data from CSV
 def read_latest_data():
