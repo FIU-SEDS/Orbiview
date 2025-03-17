@@ -19,13 +19,13 @@ def read_latest_data():
     try:
         # Check if file exists
         if not os.path.exists(CSV_FILE_PATH):
-            return None, None, None, None, None
+            return None, None, None, None, None, None
             
         # Read the CSV file
         df = pd.read_csv(CSV_FILE_PATH)
         
         if df.empty:
-            return None, None, None, None, None
+            return None, None, None, None, None, None
             
         # Get the latest row
         latest = df.iloc[-1]
@@ -34,13 +34,14 @@ def read_latest_data():
         altitude = latest.get('Altitude', 0)
         acceleration = latest.get('acceleration_x', 0)
         time_val = latest.get('time_elapsed', 0)
-        rssi = latest.get('RSSI', 0)
-        snr = latest.get('Signal-to-Noise', 0)
+        rssi = latest.get('rssi', 0)
+        snr = latest.get('signal-to-noise', 0)
+        state = latest.get('rocket_state',1)
         
         return altitude, acceleration, time_val, rssi, snr
     except Exception as e:
         print(f"Error reading CSV: {e}")
-        return None, None, None, None, None
+        return None, None, None, None, None, None
 
 # Function to determine rocket state based on altitude and acceleration
 def determine_rocket_state(altitude, acceleration):
