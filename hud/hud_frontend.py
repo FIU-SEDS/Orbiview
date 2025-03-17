@@ -32,8 +32,8 @@ def read_latest_data():
         
         # Extract values
         altitude = latest.get('Altitude', 0)
-        acceleration = latest.get('Acceleration', 0)
-        time_val = latest.get('Time', 0)
+        acceleration = latest.get('acceleration_x', 0)
+        time_val = latest.get('time_elapsed', 0)
         rssi = latest.get('RSSI', 0)
         snr = latest.get('Signal-to-Noise', 0)
         
