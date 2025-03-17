@@ -11,7 +11,7 @@ output_csv = "parsed_data.csv"
 
 with open(output_csv, mode='w', newline='') as file:
     writer = csv.writer(file)
-    writer.writerow(["acceleration_x","acceleration_y","acceleration_z","gyro_x","gyro_y","gyro_z","time_elapsed", "rssi", "signal_to_noise"])
+    writer.writerow(["acceleration_x","acceleration_y","acceleration_z","gyro_x","gyro_y","gyro_z","time_elapsed","rocket_state","rssi", "signal_to_noise"])
 
 print("Waiting for LoRa data...")
 #reads the data file and processes each line 
