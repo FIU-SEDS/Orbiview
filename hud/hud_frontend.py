@@ -48,17 +48,20 @@ def determine_rocket_state(state):
     # This is a simplistic model - you should adjust these thresholds
     # based on your actual rocket's flight profile
     if state == 1:
-        return "Idle"
+        return "INIT"
     elif state == 2:
-        return "Boost"
+        return "Idle"
     elif state == 3:
-        return "Apogee"
+        return "Boost"
     elif state == 4:
-        return "Drogue"
+        return "Apogee"
     elif state == 5:
+        return "Drogue"
+    elif state == 6:
         return "Main"
-    else:
+    elif state == 7:
         return "Landed"
+    
 
 # Layout of the Dashboard
 app.layout = html.Div([
