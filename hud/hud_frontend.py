@@ -44,18 +44,18 @@ def read_latest_data():
         return None, None, None, None, None, None
 
 # Function to determine rocket state based on altitude and acceleration
-def determine_rocket_state(altitude, acceleration):
+def determine_rocket_state(state):
     # This is a simplistic model - you should adjust these thresholds
     # based on your actual rocket's flight profile
-    if altitude < 0:
+    if state == 1:
         return "Idle"
-    elif acceleration > 150:
+    elif state == 2:
         return "Boost"
-    elif altitude > 80:
+    elif state == 3:
         return "Apogee"
-    elif altitude > 50:
+    elif state == 4:
         return "Drogue"
-    elif altitude > 20:
+    elif state == 5:
         return "Main"
     else:
         return "Landed"
