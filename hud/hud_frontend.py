@@ -43,6 +43,22 @@ def read_latest_data():
         print(f"Error reading CSV: {e}")
         return None, None, None, None, None, None
 
+# Function to determine rocket state based on altitude and acceleration
+def determine_rocket_state(state):
+    # This is a simplistic model - you should adjust these thresholds
+    # based on your actual rocket's flight profile
+    if state == 1:
+        return "Idle"
+    elif state == 2:
+        return "Boost"
+    elif state == 3:
+        return "Apogee"
+    elif state == 4:
+        return "Drogue"
+    elif state == 5:
+        return "Main"
+    else:
+        return "Landed"
 
 # Layout of the Dashboard
 app.layout = html.Div([
@@ -70,13 +86,13 @@ app.layout = html.Div([
     html.Div([
         # Text Labels
         html.Div([
-            html.Div("INIT", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
-            html.Div("IDLE", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
-            html.Div("BOOST", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
-            html.Div("APOGEE", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
-            html.Div("DROGUE", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
+            html.Div("LANDED", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
             html.Div("MAIN", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
-            html.Div("LANDED", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'})
+            html.Div("DROGUE", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
+            html.Div("APOGEE", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
+            html.Div("BOOST", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
+            html.Div("IDLE", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
+            html.Div("INIT", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'})
         ], style={
             'position': 'absolute', 'top': '4%', 'left': '10px',
             'height': '80%', 'display': 'flex', 'flex-direction': 'column',
@@ -150,7 +166,7 @@ def update_progress(n):
     
     # Map states to progress percentages
     stage_progress = {
-        "IDLE": 100, "Boost": 85, "Apogee": 68, "Drogue": 51, "Main": 34, "Landed": 17
+      7: 100,6: 84, 5: 70, 4: 56, 3: 42, 2: 28, 1: 17
     }
     
     progress_height = stage_progress.get(state, 17)
