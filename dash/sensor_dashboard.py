@@ -12,6 +12,7 @@ import pyqtgraph as pg
 class SerialThread(QThread):
     data_received = pyqtSignal(list)
     
+    # change port to /dev/ttyUSB# for linux
     def __init__(self, port='COM13', baudrate=115200):
         super().__init__()
         self.port = port
@@ -438,7 +439,9 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     
     # Change this to match your serial port
-    window = SensorDashboard(serial_port='COM13', baudrate=115200)
+    # window = SensorDashboard(serial_port='/dev/ttyUSB0', baudrate=115200) # linux
+    window = SensorDashboard(serial_port='COM13', baudrate=115200) # windows
+    
     window.show()
     
     sys.exit(app.exec())
