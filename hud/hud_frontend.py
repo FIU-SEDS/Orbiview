@@ -43,22 +43,6 @@ def read_latest_data():
         print(f"Error reading CSV: {e}")
         return None, None, None, None, None, None
 
-# Function to determine rocket state based on altitude and acceleration
-def determine_rocket_state(state):
-    # This is a simplistic model - you should adjust these thresholds
-    # based on your actual rocket's flight profile
-    if state == 1:
-        return "Idle"
-    elif state == 2:
-        return "Boost"
-    elif state == 3:
-        return "Apogee"
-    elif state == 4:
-        return "Drogue"
-    elif state == 5:
-        return "Main"
-    else:
-        return "Landed"
 
 # Layout of the Dashboard
 app.layout = html.Div([
@@ -162,20 +146,14 @@ app.layout = html.Div([
 )
 def update_progress(n):
     # Read latest data
-    altitude, acceleration, _, _, _ = read_latest_data()
-    
-    # If no data, keep at idle
-    if altitude is None:
-        current_state = "Idle"
-    else:
-        current_state = determine_rocket_state(altitude, acceleration)
+    _,_,_,_,_,_,_,state,_,_ = read_latest_data()
     
     # Map states to progress percentages
     stage_progress = {
-        "Idle": 100, "Boost": 85, "Apogee": 68, "Drogue": 51, "Main": 34, "Landed": 17
+        "IDLE": 100, "Boost": 85, "Apogee": 68, "Drogue": 51, "Main": 34, "Landed": 17
     }
     
-    progress_height = stage_progress.get(current_state, 100)
+    progress_height = stage_progress.get(state, 17)
     
     return {
         'width': '10px', 'height': f"{progress_height}%",
