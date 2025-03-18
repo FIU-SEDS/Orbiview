@@ -19,29 +19,33 @@ def read_latest_data():
     try:
         # Check if file exists
         if not os.path.exists(CSV_FILE_PATH):
-            return None, None, None, None, None, None
+            return None, None, None, None, None, None, None, None, None, None
             
         # Read the CSV file
         df = pd.read_csv(CSV_FILE_PATH)
         
         if df.empty:
-            return None, None, None, None, None, None
+            return None, None, None, None, None, None, None, None, None, None
             
         # Get the latest row
         latest = df.iloc[-1]
         
-        # Extract values
-        altitude = latest.get('Altitude', 0)
-        acceleration = latest.get('acceleration_x', 0)
+        # Extract values based on your CSV columns
+        accel_x = latest.get('acceleration_x', 0)
+        accel_y = latest.get('acceleration_y', 0)
+        accel_z = latest.get('acceleration_z', 0)
+        gyro_x = latest.get('gyro_x', 0)
+        gyro_y = latest.get('gyro_y', 0)
+        gyro_z = latest.get('gyro_z', 0)
         time_val = latest.get('time_elapsed', 0)
+        state = latest.get('rocket_state', 1)
         rssi = latest.get('rssi', 0)
-        snr = latest.get('signal-to-noise', 0)
-        state = latest.get('rocket_state',1)
+        snr = latest.get('signal_to_noise', 0)
         
-        return altitude, acceleration, time_val, rssi, snr
+        return accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z, time_val, state, rssi, snr
     except Exception as e:
         print(f"Error reading CSV: {e}")
-        return None, None, None, None, None, None
+        return None, None, None, None, None, None, None, None, None, None
 
 # Layout of the Dashboard
 app.layout = html.Div([
@@ -145,11 +149,15 @@ app.layout = html.Div([
 )
 def update_progress(n):
     # Read latest data
-    _,_,_,_,_,_,_,state,_,_ = read_latest_data()
+    _, _, _, _, _, _, _, state, _, _ = read_latest_data()
+    
+    # If no data, use default
+    if state is None:
+        state = 1  # Default to first state
     
     # Map states to progress percentages
     stage_progress = {
-      7: 100,6: 84, 5: 70, 4: 56, 3: 42, 2: 28, 1: 17
+        7: 100, 6: 84, 5: 70, 4: 56, 3: 42, 2: 28, 1: 17
     }
     
     progress_height = stage_progress.get(state, 17)
@@ -159,18 +167,13 @@ def update_progress(n):
         'background-color': 'white', 'transition': 'height 0.5s ease-in-out'
     }
 
-# Callback for updating telemetry data
-@app.callback(
-    [
-        dash.dependencies.Output('altitude', 'children'),
-        dash.dependencies.Output('acceleration', 'children'),
-        dash.dependencies.Output('mission-time', 'children')
-    ],
-    [dash.dependencies.Input('interval-component', 'n_intervals')]
-)
 def update_data(n):
     # Read latest data
-    altitude, acceleration, time_val, _, _ = read_latest_data()
+    accel_x, _, _, _, _, _, time_val, _, _, _ = read_latest_data()
+    
+    # We don't have altitude in this CSV structure
+    # You might need to calculate it or find another way to get it
+    altitude = 0  # Or set to None if you prefer
     
     # Format mission time
     if time_val is not None:
@@ -183,7 +186,7 @@ def update_data(n):
     
     # Format altitude and acceleration
     altitude_str = f"{altitude:.2f} FT" if altitude is not None else "N/A"
-    accel_str = f"{acceleration:.2f} G" if acceleration is not None else "N/A"
+    accel_str = f"{accel_x:.2f} G" if accel_x is not None else "N/A"
     
     return altitude_str, accel_str, elapsed_time
 
