@@ -4,7 +4,8 @@ Orbview is a minimalist dashboard system designed to provide real-time data visu
 
 ## UI Design:
 
-![Version 1 of the EXE file running](image.png)
+![Version 1 of the EXE file running](assets\dash.png)
+![Latest version of hud](assets\hud.png)
 
 ## To Run
 
