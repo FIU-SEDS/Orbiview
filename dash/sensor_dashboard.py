@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
 from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal
 from PyQt6.QtGui import QFont, QColor
 import pyqtgraph as pg
+import os
 
 class SerialThread(QThread):
     data_received = pyqtSignal(list)
@@ -19,10 +20,13 @@ class SerialThread(QThread):
         self.baudrate = baudrate
         self.running = True
         self.connected = False
+
+        output_dir = "logs"
+        os.makedirs(output_dir, exist_ok=True)
         
         # Generate a timestamp-based filename
         current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
-        self.output_csv = f"Flight_Data_{current_time}.csv"
+        self.output_csv = os.path.join(output_dir, f"Flight_Data_{current_time}.csv")
         
         # Initialize CSV file
         with open(self.output_csv, mode='w', newline='') as file:
