@@ -4,9 +4,14 @@ import plotly.graph_objs as go
 import pandas as pd
 import time
 import os
+import cv2
+from flask import Response, Flask
+
+# Initialize Flask server
+server = Flask(__name__)
 
 # Initialize Dash
-app = dash.Dash(__name__)
+app = dash.Dash(__name__, server=server)
 
 # CSV file path
 CSV_FILE_PATH = 'parsed_data.csv'
@@ -47,14 +52,33 @@ def read_latest_data():
         print(f"Error reading CSV: {e}")
         return None, None, None, None, None, None, None, None, None, None
 
+def generate_frames():
+    camera = cv2.VideoCapture(0)  # Use the first webcam
+
+    while True:
+        success, frame = camera.read()
+        if not success:
+            break
+        else:
+            _, buffer = cv2.imencode('.jpg', frame)
+            frame_bytes = buffer.tobytes()
+
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+
+    camera.release()
+
+# Flask route to serve the video feed
+@server.route('/video_feed')
+def video_feed():
+    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
 # Layout of the Dashboard
 app.layout = html.Div([
     # Background video
-    html.Video(
-        src="/assets/rocket.mp4",
-        autoPlay=True,
-        loop=True,
-        muted=True,
+    html.Img(
+        src="/video_feed",
         style={
             'position': 'fixed',
             'top': '50%',
@@ -192,4 +216,4 @@ def update_data(n):
 
 # Run the Dash app
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run_server(debug=False)
