@@ -48,6 +48,7 @@ def generate_frames():
     while True:
         camera = cv2.VideoCapture(0)  # Use the first webcam
 
+    #error troubleshooting
         if not camera.isOpened():
             print("Error: Could not open video device")
             time.sleep(1)  # Wait before retrying
@@ -188,7 +189,8 @@ app.layout = html.Div([
 
     # Gyroscope tilt container
     html.Div([
-        # Horizontal line for 180 degree refeerence
+        # Horizontal line for 180 degree reference 
+            #Might be modified to be a circle or include degrees 
         html.Div(
             style={
                 'position': 'absolute',
@@ -201,7 +203,7 @@ app.layout = html.Div([
             }
         ),
         
-        # Tilt line
+        # Tilt line (gyroscope)
         html.Div(
             id='tilt-line',
             style={
@@ -313,4 +315,5 @@ def update_tilt_line(n):
 
 # Run the Dash app
 if __name__ == '__main__':
+    # Removed blue debug icon on bottom right 
     app.run_server(debug=False)
