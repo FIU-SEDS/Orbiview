@@ -6,6 +6,8 @@ import time
 import os
 import cv2
 from flask import Response, Flask
+import numpy as np
+import math
 
 # Initialize Flask server
 server = Flask(__name__)
@@ -17,62 +19,78 @@ app = dash.Dash(__name__, server=server)
 CSV_FILE_PATH = 'parsed_data.csv'
 
 # Define rocket states
-rocket_states = ["INIT","Idle", "Boost", "Apogee", "Drogue", "Main", "Landed"]
+rocket_states = ["INIT", "Idle", "Boost", "Apogee", "Drogue", "Main", "Landed"]
 
 # Function to read the latest data from CSV
 def read_latest_data():
     try:
-        # Check if file exists
-        if not os.path.exists(CSV_FILE_PATH):
-            return None, None, None, None, None, None, None, None, None, None
-            
-        # Read the CSV file
+        # Read actual data from CSV
         df = pd.read_csv(CSV_FILE_PATH)
+        latest_row = df.iloc[-1]
         
-        if df.empty:
-            return None, None, None, None, None, None, None, None, None, None
-            
-        # Get the latest row
-        latest = df.iloc[-1]
-        
-        # Extract values based on your CSV columns
-        accel_x = latest.get('acceleration_x', 0)
-        accel_y = latest.get('acceleration_y', 0)
-        accel_z = latest.get('acceleration_z', 0)
-        gyro_x = latest.get('gyro_x', 0)
-        gyro_y = latest.get('gyro_y', 0)
-        gyro_z = latest.get('gyro_z', 0)
-        time_val = latest.get('time_elapsed', 0)
-        state = latest.get('rocket_state', 1)
-        rssi = latest.get('rssi', 0)
-        snr = latest.get('signal_to_noise', 0)
-        
-        return accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z, time_val, state, rssi, snr
+        return (
+            latest_row['accel_x'], 
+            latest_row['accel_y'], 
+            latest_row['accel_z'], 
+            latest_row['gyro_x'], 
+            latest_row['gyro_y'], 
+            latest_row['gyro_z'], 
+            latest_row['time'], 
+            latest_row['state'], 
+            latest_row['rssi'], 
+            latest_row['snr']
+        )
     except Exception as e:
         print(f"Error reading CSV: {e}")
         return None, None, None, None, None, None, None, None, None, None
 
 def generate_frames():
-    camera = cv2.VideoCapture(0)  # Use the first webcam
-
     while True:
-        success, frame = camera.read()
-        if not success:
-            break
-        else:
-            _, buffer = cv2.imencode('.jpg', frame)
-            frame_bytes = buffer.tobytes()
+        camera = cv2.VideoCapture(0)  # Use the first webcam
 
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+        if not camera.isOpened():
+            print("Error: Could not open video device")
+            time.sleep(1)  # Wait before retrying
+            continue
 
-    camera.release()
+        try:
+            while True:
+                success, frame = camera.read()
+                if not success:
+                    break
+                else:
+                    _, buffer = cv2.imencode('.jpg', frame)
+                    frame_bytes = buffer.tobytes()
+
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+        finally:
+            camera.release()
+
+def calculate_tilt(acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z):
+    # Handle None values
+    acc_x = acc_x if acc_x is not None else 0
+    acc_y = acc_y if acc_y is not None else 0
+    acc_z = acc_z if acc_z is not None else 0
+    gyro_x = gyro_x if gyro_x is not None else 0
+    gyro_y = gyro_y if gyro_y is not None else 0
+    gyro_z = gyro_z if gyro_z is not None else 0
+
+    # Use gyroscope data more directly for rotation
+    # Combine rotations from different axes
+    tilt_x = gyro_x  # Rotation around X-axis
+    tilt_y = gyro_y  # Rotation around Y-axis
+    
+    # Calculate combined tilt angle using both x and y rotations
+    combined_tilt = math.atan2(tilt_y, tilt_x)
+    tilt_deg = math.degrees(combined_tilt)
+
+    return tilt_deg
 
 # Flask route to serve the video feed
 @server.route('/video_feed')
 def video_feed():
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
 
 # Layout of the Dashboard
 app.layout = html.Div([
@@ -136,7 +154,6 @@ app.layout = html.Div([
 
         html.Div(style={'border-left': '3px solid white', 'height': '70px'}),
             
-
         html.Div([
             html.Div("ACCELERATION", style={'color': 'white', 'font-size': '14px'}),
             html.H3(id='acceleration', style={'color': 'white'})
@@ -156,7 +173,57 @@ app.layout = html.Div([
         'border-radius': '10px', 'color': 'white','font-size': '24px',
     }),
 
+    html.Div(
+        style={
+            'position': 'absolute',
+            'bottom': '50px',  # Adjust this to move it vertically
+            'left': '50%',     # Center it horizontally
+            'transform': 'translateX(-50%)',  # Ensure exact center
+            'width': '5px',    # Make it very narrow
+            'height': '1px',   # Keep it thin
+            'backgroundColor': 'white',  # Make it visible
+            'zIndex': '10'
+        }
+    ),
 
+    # Gyroscope tilt container
+    html.Div([
+        # Horizontal line for 180 degree refeerence
+        html.Div(
+            style={
+                'position': 'absolute',
+                'top': '73%',
+                'left': '625px',
+                'width': '225px',
+                'height': '1px',
+                'borderTop': '4px dotted rgba(255,255,255,0.8)',
+                'zIndex': '10'
+            }
+        ),
+        
+        # Tilt line
+        html.Div(
+            id='tilt-line',
+            style={
+                'position': 'absolute',
+                'bottom': '50px',
+                'left': '50%',
+                'transform': 'translateX(-50%)',
+                'width': '5px',
+                'height': '100px',
+                'background-color': 'white',
+                'transformOrigin': 'center bottom',
+                'transition': 'transform 0.1s linear',
+                'zIndex': '20'
+            }
+        )
+    ], style={
+        'position': 'absolute',
+        'width': '100%',
+        'height': '200px',
+        'bottom': '0',
+        'left': '0'
+    }),
 
     # Logo
     html.Img(src="/assets/seds.png", style={'position': 'absolute', 'top': '10px', 'right': '10px', 'width': '100px', 'opacity': '0.5'}),
@@ -191,6 +258,12 @@ def update_progress(n):
         'background-color': 'white', 'transition': 'height 0.5s ease-in-out'
     }
 
+@app.callback(
+    dash.dependencies.Output('altitude', 'children'),
+    dash.dependencies.Output('acceleration', 'children'),
+    dash.dependencies.Output('mission-time', 'children'),
+    [dash.dependencies.Input('interval-component', 'n_intervals')]
+)
 def update_data(n):
     # Read latest data
     accel_x, _, _, _, _, _, time_val, _, _, _ = read_latest_data()
@@ -213,6 +286,30 @@ def update_data(n):
     accel_str = f"{accel_x:.2f} G" if accel_x is not None else "N/A"
     
     return altitude_str, accel_str, elapsed_time
+
+@app.callback(
+    dash.dependencies.Output('tilt-line', 'style'),
+    [dash.dependencies.Input('interval-component', 'n_intervals')]
+)
+def update_tilt_line(n):
+    # Read latest data
+    accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z, _, _, _, _ = read_latest_data()
+    
+    # Calculate tilt angle
+    tilt_value = calculate_tilt(accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z)
+
+    return {
+        'position': 'absolute',
+        'bottom': '50px',
+        'left': '50%',
+        'transform': f'translateX(-50%) rotate({tilt_value}deg)',
+        'width': '5px',
+        'height': '100px',
+        'background-color': 'white',
+        'transform-origin': 'center bottom',
+        'transition': 'transform 0.1s linear',
+        'z-index': '20'
+    }
 
 # Run the Dash app
 if __name__ == '__main__':
