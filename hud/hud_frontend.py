@@ -195,7 +195,7 @@ app.layout = html.Div([
             style={
                 'position': 'absolute',
                 'top': '73%',
-                'left': '625px',
+                'left': '642px',
                 'width': '225px',
                 'height': '1px',
                 'borderTop': '4px dotted rgba(255,255,255,0.8)',
