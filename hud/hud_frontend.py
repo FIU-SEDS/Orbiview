@@ -316,4 +316,4 @@ def update_tilt_line(n):
 # Run the Dash app
 if __name__ == '__main__':
     # Removed blue debug icon on bottom right 
-    app.run_server(debug=False)
+    app.run(debug=False)
