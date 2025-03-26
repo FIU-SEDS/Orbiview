@@ -320,7 +320,7 @@ class SensorDashboard(QMainWindow):
         
         # Set initial connection state
         self.is_connected = False
-        self.state.value_label.setText("WAITING FOR CONNECTION")
+        self.state.value_label.setText("CONNECT RECIEVER")
         
         # Create legends
         self.create_legend(self.accel_graph, ["accel_x", "accel_y", "accel_z"])
