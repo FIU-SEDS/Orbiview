@@ -167,11 +167,14 @@ class SensorDashboard(QMainWindow):
         telemetry_layout = QVBoxLayout()
         telemetry_widget.setLayout(telemetry_layout)
         
-        # Create telemetry title
+        # Create telemetry title & ON/OFF label
         telemetry_title = QLabel("Telemetry")
         telemetry_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         telemetry_title.setFont(QFont("Arial", 14))
+        self.OnOrOff = QLabel("🔴⚪")
+        self.OnOrOff.setAlignment(Qt.AlignmentFlag.AlignCenter)
         telemetry_layout.addWidget(telemetry_title)
+        telemetry_layout.addWidget(self.OnOrOff)
         
         # Create telemetry values display
         telemetry_values = QWidget()
@@ -446,6 +449,9 @@ class SensorDashboard(QMainWindow):
             self.state.value_label.setText("MAIN")
         elif(state == "7"):
             self.state.value_label.setText("LAND")
+
+        #Update ON/OFF label
+        self.OnOrOff.setText("⚪🟢")
         
 
     def closeEvent(self, event):
