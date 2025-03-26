@@ -193,9 +193,9 @@ app.layout = html.Div([
             #Might be modified to be a circle or include degrees 
         html.Div(
             style={
-                'position': 'absolute',
+                'position': 'relative',
                 'top': '73%',
-                'left': '624px',
+                'left': '625px',
                 'width': '225px',
                 'height': '1px',
                 'borderTop': '4px dotted rgba(255,255,255,0.8)',
