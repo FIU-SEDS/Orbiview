@@ -354,7 +354,7 @@ class SensorDashboard(QMainWindow):
         if hasattr(self, 'last_data_time') and (current_time - self.last_data_time) > 5:
             if self.is_connected:
                 self.is_connected = False
-                self.state.value_label.setText("WAITING FOR CONNECTION")
+                self.state.value_label.setText("CONNECT RECIEVER")
                 
                 # Reset values when disconnected
                 self.accel_x.value_label.setText("--")
