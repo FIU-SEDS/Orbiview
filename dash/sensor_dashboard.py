@@ -310,7 +310,7 @@ class SensorDashboard(QMainWindow):
         )
         
         # Set y-axis ranges
-        self.accel_graph.plot_widget.setYRange(-800, 1400)
+        self.accel_graph.plot_widget.setYRange(-1000, 1500)
         self.gyro_graph.plot_widget.setYRange(-150000, 150000)
         self.rssi_graph.plot_widget.setYRange(-50, 0)
         self.snr_graph.plot_widget.setYRange(0, 12)
@@ -430,7 +430,23 @@ class SensorDashboard(QMainWindow):
         self.gyro_y.value_label.setText(str(gyro_y))
         self.gyro_z.value_label.setText(str(gyro_z))
         self.time.value_label.setText(str(time_value))
-        self.state.value_label.setText(state)
+
+        # Update state display
+        if(state == "1"):
+            self.state.value_label.setText("INIT")
+        elif(state == "2"):
+            self.state.value_label.setText("IDLE")
+        elif(state == "3"):
+            self.state.value_label.setText("BOOST")
+        elif(state == "4"):
+            self.state.value_label.setText("APOGEE")
+        elif(state == "5"):
+            self.state.value_label.setText("DROGUE")
+        elif(state == "6"):
+            self.state.value_label.setText("MAIN")
+        elif(state == "7"):
+            self.state.value_label.setText("LAND")
+        
 
     def closeEvent(self, event):
         """Handle window close event to clean up resources"""
