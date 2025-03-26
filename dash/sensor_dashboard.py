@@ -21,7 +21,7 @@ class SerialThread(QThread):
         self.running = True
         self.connected = False
 
-        output_dir = "logs"
+        output_dir = "Flight_Logs"
         os.makedirs(output_dir, exist_ok=True)
         
         # Generate a timestamp-based filename
