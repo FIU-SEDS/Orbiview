@@ -268,14 +268,14 @@ class SensorDashboard(QMainWindow):
         self.x_data = np.arange(500)
         
         # Initialize empty data arrays
-        self.accel_x_data = np.zeros(500)
-        self.accel_y_data = np.zeros(500)
-        self.accel_z_data = np.zeros(500)
-        self.gyro_x_data = np.zeros(500)
-        self.gyro_y_data = np.zeros(500)
-        self.gyro_z_data = np.zeros(500)
-        self.rssi_data = np.zeros(500)
-        self.snr_data = np.zeros(500)
+        self.accel_x_data = np.zeros(0)
+        self.accel_y_data = np.zeros(0)
+        self.accel_z_data = np.zeros(0)
+        self.gyro_x_data = np.zeros(0)
+        self.gyro_y_data = np.zeros(0)
+        self.gyro_z_data = np.zeros(0)
+        self.rssi_data = np.zeros(0)
+        self.snr_data = np.zeros(0)
         
         # Create acceleration plot lines
         self.accel_x_line = self.accel_graph.plot_widget.plot(
