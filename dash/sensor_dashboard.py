@@ -55,6 +55,8 @@ class SerialThread(QThread):
                     time.sleep(reconnect_delay)  # Allow time for connection to establish
                     self.connected = True
                     print(f"Connected to {self.port}. Waiting for data...")
+                    self.state.value_label.setText("WAITING FOR SIGNAL")
+
                 except Exception as e:
                     print(f"Connection failed: {e}. Retrying in {reconnect_delay} seconds...")
                     time.sleep(reconnect_delay)
@@ -271,14 +273,14 @@ class SensorDashboard(QMainWindow):
         self.x_data = np.arange(500)
         
         # Initialize empty data arrays
-        self.accel_x_data = np.zeros(0)
-        self.accel_y_data = np.zeros(0)
-        self.accel_z_data = np.zeros(0)
-        self.gyro_x_data = np.zeros(0)
-        self.gyro_y_data = np.zeros(0)
-        self.gyro_z_data = np.zeros(0)
-        self.rssi_data = np.zeros(0)
-        self.snr_data = np.zeros(0)
+        self.accel_x_data = np.zeros(500)
+        self.accel_y_data = np.zeros(500)
+        self.accel_z_data = np.zeros(500)
+        self.gyro_x_data = np.zeros(500)
+        self.gyro_y_data = np.zeros(500)
+        self.gyro_z_data = np.zeros(500)
+        self.rssi_data = np.zeros(500)
+        self.snr_data = np.zeros(500)
         
         # Create acceleration plot lines
         self.accel_x_line = self.accel_graph.plot_widget.plot(
@@ -354,7 +356,9 @@ class SensorDashboard(QMainWindow):
         if hasattr(self, 'last_data_time') and (current_time - self.last_data_time) > 5:
             if self.is_connected:
                 self.is_connected = False
-                self.state.value_label.setText("CONNECT RECIEVER")
+                self.state.value_label.setText("CONNECTION LOST")
+                self.OnOrOff.setText("🔴⚪")
+
                 
                 # Reset values when disconnected
                 self.accel_x.value_label.setText("--")
