@@ -48,7 +48,7 @@ def generate_frames():
     while True:
         camera = cv2.VideoCapture(0)  # Use the first webcam
 
-    #error troubleshooting
+        # Error troubleshooting
         if not camera.isOpened():
             print("Error: Could not open video device")
             time.sleep(1)  # Wait before retrying
@@ -146,6 +146,23 @@ app.layout = html.Div([
         'display': 'flex', 'flex-direction': 'row', 'align-items': 'center'
     }),
 
+    # Bottom screen shadow 
+    html.Div(
+        children=[
+            html.Div(
+                style={
+                    "position": "relative",
+                    "width": "100vw",  # Ensure it covers the full viewport width
+                    "height": "125px",  # Adjust for more shadow
+                    "background": "linear-gradient(to bottom, transparent, rgba(0, 0, 0, 1.2))",
+                    "margin-top": "auto",  # Pushes the shadow to the bottom
+                    "right": "8px"
+                }
+            )
+        ],
+        style={"position": "relative", "height": "100vh", "display": "flex", "flex-direction": "column"}  # Adjust as needed
+    ),
+
     # Bottom telemetry data
     html.Div([
         html.Div([
@@ -190,7 +207,7 @@ app.layout = html.Div([
     # Gyroscope tilt container
     html.Div([
         # Horizontal line for 180 degree reference 
-            #Might be modified to be a circle or include degrees 
+        # Might be modified to be a circle or include degrees 
         html.Div(
             style={
                 'position': 'relative',
