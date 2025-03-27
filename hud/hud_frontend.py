@@ -29,16 +29,16 @@ def read_latest_data():
         latest_row = df.iloc[-1]
         
         return (
-            latest_row['accel_x'], 
-            latest_row['accel_y'], 
-            latest_row['accel_z'], 
+            latest_row['acceleration_x'],  # Changed from accel_x 
+            latest_row['acceleration_y'],  # Changed from accel_y
+            latest_row['acceleration_z'],  # Changed from accel_z
             latest_row['gyro_x'], 
             latest_row['gyro_y'], 
             latest_row['gyro_z'], 
-            latest_row['time'], 
-            latest_row['state'], 
+            latest_row['time_elapsed'],    # Changed from time
+            latest_row['rocket_state'],    # Changed from state
             latest_row['rssi'], 
-            latest_row['snr']
+            latest_row['signal_to_noise']  # Changed from snr
         )
     except Exception as e:
         print(f"Error reading CSV: {e}")
