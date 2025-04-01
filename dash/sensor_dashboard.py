@@ -118,7 +118,7 @@ class SerialThread(QThread):
         self.wait()
 
 class SensorDashboard(QMainWindow):
-    def __init__(self, serial_port='COM13', baudrate=115200):
+    def __init__(self, serial_port='/dev/ttyUSB0', baudrate=115200):
         super().__init__()
         
         # Set window title and size
@@ -470,7 +470,7 @@ if __name__ == "__main__":
     
     # Change this to match your serial port
     # window = SensorDashboard(serial_port='/dev/ttyUSB0', baudrate=115200) # linux
-    window = SensorDashboard(serial_port='COM13', baudrate=115200) # windows
+    window = SensorDashboard(serial_port='/dev/ttyUSB0', baudrate=115200) # windows
     
     window.show()
     
