@@ -94,6 +94,34 @@ def video_feed():
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 # Layout of the Dashboard
+app.layout = html.Div(
+    style={
+        'position': 'relative',
+        'width': '100vw',  # Full viewport width
+        'height': '100vh',  # Full viewport height
+        'overflow': 'hidden',  # Prevent overflow
+    },
+    children=[
+        # Background video
+        html.Img(
+            src="/video_feed",
+            style={
+                'position': 'fixed',
+                'top': '50%',
+                'left': '50%',
+                'transform': 'translate(-50%, -50%)',
+                'min-width': '100%',
+                'min-height': '100%',
+                'width': 'auto',
+                'height': 'auto',
+                'z-index': '-1',
+                'object-fit': 'cover',
+            },
+        ),
+        # Other components...
+    ],
+)
+
 app.layout = html.Div([
     # Background video
     html.Img(
@@ -151,16 +179,21 @@ app.layout = html.Div([
         children=[
             html.Div(
                 style={
-                    "position": "relative",
-                    "width": "100vw",  # Ensure it covers the full viewport width
-                    "height": "125px",  # Adjust for more shadow
-                    "background": "linear-gradient(to bottom, transparent, rgba(0, 0, 0, 1.2))",
-                    "margin-top": "auto",  # Pushes the shadow to the bottom
-                    "right": "8px"
+                    "position": "absolute",
+                    "width": "100%",  # Ensure it covers the full width of the viewport
+                    "height": "20vh",  # Use viewport height for responsiveness
+                    "background": "linear-gradient(to bottom, transparent, rgba(0, 0, 0, 1))",  # Smooth gradient
+                    "bottom": "0",  # Stick to the bottom of the viewport
+                    "left": "0",  # Align to the left edge
                 }
             )
         ],
-        style={"position": "relative", "height": "100vh", "display": "flex", "flex-direction": "column"}  # Adjust as needed
+        style={
+            "position": "relative",
+            "height": "100vh",  # Ensure it spans the full viewport height
+            "display": "flex",
+            "flex-direction": "column",
+        }
     ),
 
     # Bottom telemetry data
