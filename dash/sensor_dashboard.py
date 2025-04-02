@@ -12,9 +12,10 @@ import os
 
 class SerialThread(QThread):
     data_received = pyqtSignal(list)
+    connection_status_changed = pyqtSignal(bool, str)  # New signal for connection status
     
     # change port to /dev/ttyUSB# for linux
-    def __init__(self, port='/dev/ttyUSB0', baudrate=115200):
+    def __init__(self, port='COM13', baudrate=115200):
         super().__init__()
         self.port = port
         self.baudrate = baudrate
@@ -55,9 +56,9 @@ class SerialThread(QThread):
                     time.sleep(reconnect_delay)  # Allow time for connection to establish
                     self.connected = True
                     print(f"Connected to {self.port}. Waiting for data...")
-                    self.state.value_label.setText("WAITING FOR SIGNAL")
-                    self.OnOrOff.setText("⚪🟢Reciever          🔴⚪Signal")
-
+                    
+                    # Emit signal instead of directly accessing UI elements
+                    self.connection_status_changed.emit(True, "WAITING FOR SIGNAL")
 
                 except Exception as e:
                     print(f"Connection failed: {e}. Retrying in {reconnect_delay} seconds...")
@@ -106,8 +107,10 @@ class SerialThread(QThread):
             except serial.SerialException as e:
                 print(f"Serial connection lost: {e}. Attempting to reconnect...")
                 self.connected = False
-                self.state.value_label.setText("RECONNECT RECIEVER")
-                self.OnOrOff.setText("🔴⚪Reciever          🔴⚪Signal")
+                
+                # Emit signal instead of directly accessing UI elements
+                self.connection_status_changed.emit(False, "RECONNECT RECIEVER")
+                
                 time.sleep(reconnect_delay)
             except Exception as e:
                 print(f"Error reading data: {e}")
@@ -123,17 +126,26 @@ class SerialThread(QThread):
 
 class SensorDashboard(QMainWindow):
     # change port to /dev/ttyUSB# for linux
-    def __init__(self, serial_port='/dev/ttyUSB0', baudrate=115200):
+    def __init__(self, serial_port='COM13', baudrate=115200):
         super().__init__()
         
         # Set window title and size
         self.setWindowTitle("Sensor Dashboard")
         self.setGeometry(100, 100, 1200, 800)
         
+        # Create the UI elements first
+        self.init_ui()
+        
         # Setup serial communication thread
         self.serial_thread = SerialThread(port=serial_port, baudrate=baudrate)
         self.serial_thread.data_received.connect(self.update_with_serial_data)
+        self.serial_thread.connection_status_changed.connect(self.update_connection_status)
         
+        # Start serial thread
+        self.serial_thread.start()
+    
+    def init_ui(self):
+        """Initialize all UI elements"""
         # Set dark theme colors
         self.setStyleSheet("""
             QMainWindow, QWidget {
@@ -217,9 +229,15 @@ class SensorDashboard(QMainWindow):
         # Setup data and timers
         self.setup_graph_data()
         self.setup_timers()
-        
-        # Start serial thread
-        self.serial_thread.start()
+    
+    def update_connection_status(self, is_connected, status_message):
+        """Handler for connection status changes"""
+        if is_connected:
+            self.state.value_label.setText(status_message)
+            self.OnOrOff.setText("⚪🟢Reciever          🔴⚪Signal")
+        else:
+            self.state.value_label.setText(status_message)
+            self.OnOrOff.setText("🔴⚪Reciever          🔴⚪Signal")
     
     def create_graph_panel(self, title):
         # Create widget for the graph panel
@@ -362,7 +380,6 @@ class SensorDashboard(QMainWindow):
                 self.is_connected = False
                 self.state.value_label.setText("CONNECTION LOST")
                 self.OnOrOff.setText("⚪🟢Reciever          🔴⚪Signal")
-
                 
                 # Reset values when disconnected
                 self.accel_x.value_label.setText("--")
@@ -378,8 +395,6 @@ class SensorDashboard(QMainWindow):
         # On first run, set initial timestamp
         if not hasattr(self, 'last_data_time'):
             self.last_data_time = current_time
-    
-    # Removed update_telemetry method as it's no longer needed
                 
     def update_with_serial_data(self, data):
         """Update dashboard with real data received from serial port"""
@@ -455,7 +470,7 @@ class SensorDashboard(QMainWindow):
         elif(state == "7"):
             self.state.value_label.setText("LAND")
 
-        #Update ON/OFF label
+        # Update ON/OFF label
         self.OnOrOff.setText("⚪🟢Reciever          ⚪🟢Signal")
         
 
@@ -470,7 +485,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     
     # window = SensorDashboard(serial_port='/dev/ttyUSB0', baudrate=115200) # linux
-    window = SensorDashboard(serial_port='/dev/ttyUSB0', baudrate=115200) # windows
+    window = SensorDashboard(serial_port='COM13', baudrate=115200) # windows
     
     window.show()
     
