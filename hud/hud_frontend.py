@@ -118,7 +118,7 @@ app.layout = html.Div(
                 'object-fit': 'cover',
             },
         ),
-        # Other components...
+    
     ],
 )
 

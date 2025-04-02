@@ -4,10 +4,10 @@ import time
 
 #setting up a serial connection (port and baud rate)
 # ser = serial.Serial(port='/dev/cu.usbmodem1101', baudrate=9600, timeout=1) # mac
-ser = serial.Serial(port='COM13', baudrate=115200, timeout=1) # windows
+ser = serial.Serial(port='/dev/cu.usbmodem1101', baudrate=115200, timeout=1) # windows
 time.sleep(2)
 
-output_csv = "parsed_data.csv"
+output_csv = "../parsed_data.csv"
 
 with open(output_csv, mode='w', newline='') as file:
     writer = csv.writer(file)
