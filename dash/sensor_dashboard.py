@@ -14,7 +14,7 @@ class SerialThread(QThread):
     data_received = pyqtSignal(list)
     
     # change port to /dev/ttyUSB# for linux
-    def __init__(self, port='COM13', baudrate=115200):
+    def __init__(self, port='/dev/ttyUSB0', baudrate=115200):
         super().__init__()
         self.port = port
         self.baudrate = baudrate
@@ -56,6 +56,8 @@ class SerialThread(QThread):
                     self.connected = True
                     print(f"Connected to {self.port}. Waiting for data...")
                     self.state.value_label.setText("WAITING FOR SIGNAL")
+                    self.OnOrOff.setText("⚪🟢Reciever          🔴⚪Signal")
+
 
                 except Exception as e:
                     print(f"Connection failed: {e}. Retrying in {reconnect_delay} seconds...")
@@ -67,7 +69,7 @@ class SerialThread(QThread):
                 if ser.in_waiting:
                     line = ser.readline().decode('utf-8').strip()  # Read and decode serial data
                     if "+RCV=" in line:
-                        clean_data = line.replace("+RCV=", "")  # FOR OLD CODE IT IS Received: +RCV=
+                        clean_data = line.replace("+RCV=", "")  # FOR OLD CODE IT IS Received: Recieved+RCV=
                         data_values = clean_data.split(',')
                         
                         # Parse data values
@@ -104,6 +106,8 @@ class SerialThread(QThread):
             except serial.SerialException as e:
                 print(f"Serial connection lost: {e}. Attempting to reconnect...")
                 self.connected = False
+                self.state.value_label.setText("RECONNECT RECIEVER")
+                self.OnOrOff.setText("🔴⚪Reciever          🔴⚪Signal")
                 time.sleep(reconnect_delay)
             except Exception as e:
                 print(f"Error reading data: {e}")
@@ -118,6 +122,7 @@ class SerialThread(QThread):
         self.wait()
 
 class SensorDashboard(QMainWindow):
+    # change port to /dev/ttyUSB# for linux
     def __init__(self, serial_port='/dev/ttyUSB0', baudrate=115200):
         super().__init__()
         
@@ -173,7 +178,7 @@ class SensorDashboard(QMainWindow):
         telemetry_title = QLabel("Telemetry")
         telemetry_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         telemetry_title.setFont(QFont("Arial", 14))
-        self.OnOrOff = QLabel("🔴⚪")
+        self.OnOrOff = QLabel("🔴⚪Reciever          🔴⚪Signal")
         self.OnOrOff.setAlignment(Qt.AlignmentFlag.AlignCenter)
         telemetry_layout.addWidget(telemetry_title)
         telemetry_layout.addWidget(self.OnOrOff)
@@ -269,49 +274,48 @@ class SensorDashboard(QMainWindow):
         return widget
     
     def setup_graph_data(self):
-        # Generate x-axis data (time points)
-        self.x_data = np.arange(500)
+        # Create empty lists to store data
+        self.accel_x_data = []
+        self.accel_y_data = []
+        self.accel_z_data = []
+        self.gyro_x_data = []
+        self.gyro_y_data = []
+        self.gyro_z_data = []
+        self.rssi_data = []
+        self.snr_data = []
+        self.time_data = []  
         
-        # Initialize empty data arrays
-        self.accel_x_data = np.zeros(500)
-        self.accel_y_data = np.zeros(500)
-        self.accel_z_data = np.zeros(500)
-        self.gyro_x_data = np.zeros(500)
-        self.gyro_y_data = np.zeros(500)
-        self.gyro_z_data = np.zeros(500)
-        self.rssi_data = np.zeros(500)
-        self.snr_data = np.zeros(500)
+        # Create variable to track if received enough data to start plotting
+        self.has_data = False
+        self.max_points = 500  # Maximum number of points to display
         
-        # Create acceleration plot lines
+        # Create plot lines with empty data initially
         self.accel_x_line = self.accel_graph.plot_widget.plot(
-            self.x_data, self.accel_x_data, pen=pg.mkPen(color='#3498db', width=2), name="acceleration_x"
+            [], [], pen=pg.mkPen(color='#3498db', width=2), name="acceleration_x"
         )
         self.accel_y_line = self.accel_graph.plot_widget.plot(
-            self.x_data, self.accel_y_data, pen=pg.mkPen(color='#2ecc71', width=2), name="acceleration_y"
+            [], [], pen=pg.mkPen(color='#2ecc71', width=2), name="acceleration_y"
         )
         self.accel_z_line = self.accel_graph.plot_widget.plot(
-            self.x_data, self.accel_z_data, pen=pg.mkPen(color='#e74c3c', width=2), name="acceleration_z"
+            [], [], pen=pg.mkPen(color='#e74c3c', width=2), name="acceleration_z"
         )
         
-        # Create gyroscope plot lines
         self.gyro_x_line = self.gyro_graph.plot_widget.plot(
-            self.x_data, self.gyro_x_data, pen=pg.mkPen(color='#3498db', width=2), name="gyro_x"
+            [], [], pen=pg.mkPen(color='#3498db', width=2), name="gyro_x"
         )
         self.gyro_y_line = self.gyro_graph.plot_widget.plot(
-            self.x_data, self.gyro_y_data, pen=pg.mkPen(color='#e74c3c', width=2), name="gyro_y"
+            [], [], pen=pg.mkPen(color='#e74c3c', width=2), name="gyro_y"
         )
         self.gyro_z_line = self.gyro_graph.plot_widget.plot(
-            self.x_data, self.gyro_z_data, pen=pg.mkPen(color='#f1c40f', width=2), name="gyro_z"
+            [], [], pen=pg.mkPen(color='#f1c40f', width=2), name="gyro_z"
         )
         
-        # Create RSSI plot line
         self.rssi_line = self.rssi_graph.plot_widget.plot(
-            self.x_data, self.rssi_data, pen=pg.mkPen(color='#FFFFFF', width=2), name="rssi"
+            [], [], pen=pg.mkPen(color='#FFFFFF', width=2), name="rssi"
         )
         
-        # Create SNR plot line
         self.snr_line = self.snr_graph.plot_widget.plot(
-            self.x_data, self.snr_data, pen=pg.mkPen(color='#3498db', width=2), name="snr"
+            [], [], pen=pg.mkPen(color='#3498db', width=2), name="snr"
         )
         
         # Set y-axis ranges
@@ -357,7 +361,7 @@ class SensorDashboard(QMainWindow):
             if self.is_connected:
                 self.is_connected = False
                 self.state.value_label.setText("CONNECTION LOST")
-                self.OnOrOff.setText("🔴⚪")
+                self.OnOrOff.setText("⚪🟢Reciever          🔴⚪Signal")
 
                 
                 # Reset values when disconnected
@@ -389,45 +393,42 @@ class SensorDashboard(QMainWindow):
         
         self.last_data_time = time.time()
         
-        # Update acceleration data
-        self.accel_x_data = np.roll(self.accel_x_data, -1)
-        self.accel_x_data[-1] = accel_x
+        # Add the new time value to our time_data array
+        self.time_data.append(time_value)
         
-        self.accel_y_data = np.roll(self.accel_y_data, -1)
-        self.accel_y_data[-1] = accel_y
+        # Add data to lists (instead of numpy roll)
+        self.accel_x_data.append(accel_x)
+        self.accel_y_data.append(accel_y)
+        self.accel_z_data.append(accel_z)
+        self.gyro_x_data.append(gyro_x)
+        self.gyro_y_data.append(gyro_y)
+        self.gyro_z_data.append(gyro_z)
+        self.rssi_data.append(rssi)
+        self.snr_data.append(snr)
         
-        self.accel_z_data = np.roll(self.accel_z_data, -1)
-        self.accel_z_data[-1] = accel_z
+        # Trim lists to max_points if they get too long
+        if len(self.time_data) > self.max_points:
+            self.time_data = self.time_data[-self.max_points:]
+            self.accel_x_data = self.accel_x_data[-self.max_points:]
+            self.accel_y_data = self.accel_y_data[-self.max_points:]
+            self.accel_z_data = self.accel_z_data[-self.max_points:]
+            self.gyro_x_data = self.gyro_x_data[-self.max_points:]
+            self.gyro_y_data = self.gyro_y_data[-self.max_points:]
+            self.gyro_z_data = self.gyro_z_data[-self.max_points:]
+            self.rssi_data = self.rssi_data[-self.max_points:]
+            self.snr_data = self.snr_data[-self.max_points:]
         
-        # Update gyroscope data
-        self.gyro_x_data = np.roll(self.gyro_x_data, -1)
-        self.gyro_x_data[-1] = gyro_x
+        # Update plot data using time_data for x-axis
+        self.accel_x_line.setData(self.time_data, self.accel_x_data)
+        self.accel_y_line.setData(self.time_data, self.accel_y_data)
+        self.accel_z_line.setData(self.time_data, self.accel_z_data)
         
-        self.gyro_y_data = np.roll(self.gyro_y_data, -1)
-        self.gyro_y_data[-1] = gyro_y
+        self.gyro_x_line.setData(self.time_data, self.gyro_x_data)
+        self.gyro_y_line.setData(self.time_data, self.gyro_y_data)
+        self.gyro_z_line.setData(self.time_data, self.gyro_z_data)
         
-        self.gyro_z_data = np.roll(self.gyro_z_data, -1)
-        self.gyro_z_data[-1] = gyro_z
-        
-        # Update RSSI data
-        self.rssi_data = np.roll(self.rssi_data, -1)
-        self.rssi_data[-1] = rssi
-        
-        # Update SNR data
-        self.snr_data = np.roll(self.snr_data, -1)
-        self.snr_data[-1] = snr
-        
-        # Update plot data
-        self.accel_x_line.setData(self.x_data, self.accel_x_data)
-        self.accel_y_line.setData(self.x_data, self.accel_y_data)
-        self.accel_z_line.setData(self.x_data, self.accel_z_data)
-        
-        self.gyro_x_line.setData(self.x_data, self.gyro_x_data)
-        self.gyro_y_line.setData(self.x_data, self.gyro_y_data)
-        self.gyro_z_line.setData(self.x_data, self.gyro_z_data)
-        
-        self.rssi_line.setData(self.x_data, self.rssi_data)
-        self.snr_line.setData(self.x_data, self.snr_data)
+        self.rssi_line.setData(self.time_data, self.rssi_data)
+        self.snr_line.setData(self.time_data, self.snr_data)
         
         # Update telemetry display
         self.accel_x.value_label.setText(str(accel_x))
@@ -455,7 +456,7 @@ class SensorDashboard(QMainWindow):
             self.state.value_label.setText("LAND")
 
         #Update ON/OFF label
-        self.OnOrOff.setText("⚪🟢")
+        self.OnOrOff.setText("⚪🟢Reciever          ⚪🟢Signal")
         
 
     def closeEvent(self, event):
@@ -468,7 +469,6 @@ class SensorDashboard(QMainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     
-    # Change this to match your serial port
     # window = SensorDashboard(serial_port='/dev/ttyUSB0', baudrate=115200) # linux
     window = SensorDashboard(serial_port='/dev/ttyUSB0', baudrate=115200) # windows
     
