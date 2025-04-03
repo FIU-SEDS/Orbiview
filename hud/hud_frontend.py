@@ -40,10 +40,12 @@ def read_latest_data():
             latest_row['rssi'], 
             latest_row['signal_to_noise']  # Changed from snr
         )
+    #If the CSV file is not found, return None values
     except Exception as e:
         print(f"Error reading CSV: {e}")
         return None, None, None, None, None, None, None, None, None, None
-
+    
+#function to generate video feed 
 def generate_frames():
     while True:
         camera = cv2.VideoCapture(0)  # Use the first webcam
@@ -68,6 +70,7 @@ def generate_frames():
         finally:
             camera.release()
 
+# Gyroscope calculations, if no values are provided, default to 0
 def calculate_tilt(acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z):
     # Handle None values
     acc_x = acc_x if acc_x is not None else 0
@@ -224,6 +227,7 @@ app.layout = html.Div([
         'border-radius': '10px', 'color': 'white','font-size': '24px',
     }),
 
+    #Gyroscope tilt reference line
     html.Div(
         style={
             'position': 'absolute',
@@ -290,6 +294,7 @@ app.layout = html.Div([
     dash.dependencies.Output('progress-bar', 'style'),
     [dash.dependencies.Input('interval-component', 'n_intervals')]
 )
+# Callback for updating the progress bar based on rocket state
 def update_progress(n):
     # Read latest data
     _, _, _, _, _, _, _, state, _, _ = read_latest_data()
@@ -343,6 +348,7 @@ def update_data(n):
     dash.dependencies.Output('tilt-line', 'style'),
     [dash.dependencies.Input('interval-component', 'n_intervals')]
 )
+# Callback for updating the tilt line based on gyroscope data
 def update_tilt_line(n):
     # Read latest data
     accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z, _, _, _, _ = read_latest_data()
