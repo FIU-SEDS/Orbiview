@@ -389,6 +389,27 @@ class SensorDashboard(QMainWindow):
                 self.gyro_y.value_label.setText("--")
                 self.gyro_z.value_label.setText("--")
                 self.time.value_label.setText("--")
+
+                # Clear all graph data
+                self.time_data = []
+                self.accel_x_data = []
+                self.accel_y_data = []
+                self.accel_z_data = []
+                self.gyro_x_data = []
+                self.gyro_y_data = []
+                self.gyro_z_data = []
+                self.rssi_data = []
+                self.snr_data = []
+                
+                # Update plots with empty data
+                self.accel_x_line.setData([], [])
+                self.accel_y_line.setData([], [])
+                self.accel_z_line.setData([], [])
+                self.gyro_x_line.setData([], [])
+                self.gyro_y_line.setData([], [])
+                self.gyro_z_line.setData([], [])
+                self.rssi_line.setData([], [])
+                self.snr_line.setData([], [])
                 
                 print("Connection lost. Waiting for data...")
         
