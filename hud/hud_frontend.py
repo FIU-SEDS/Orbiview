@@ -8,6 +8,10 @@ import cv2
 from flask import Response, Flask
 import numpy as np
 import math
+import serial
+import threading
+from queue import Queue
+import csv
 
 # Initialize Flask server
 server = Flask(__name__)
@@ -15,37 +19,159 @@ server = Flask(__name__)
 # Initialize Dash
 app = dash.Dash(__name__, server=server)
 
-# CSV file path
-CSV_FILE_PATH = 'parsed_data.csv'
+# Serial port configuration - change COM13 to your port
+SERIAL_PORT = 'COM13'  # Use '/dev/ttyUSB0' for Linux
+BAUDRATE = 115200
 
 # Define rocket states
 rocket_states = ["INIT", "Idle", "Boost", "Apogee", "Drogue", "Main", "Landed"]
 
-# Function to read the latest data from CSV
-def read_latest_data():
-    try:
-        # Read actual data from CSV
-        df = pd.read_csv(CSV_FILE_PATH)
-        latest_row = df.iloc[-1]
-        
-        return (
-            latest_row['acceleration_x'],  # Changed from accel_x 
-            latest_row['acceleration_y'],  # Changed from accel_y
-            latest_row['acceleration_z'],  # Changed from accel_z
-            latest_row['gyro_x'], 
-            latest_row['gyro_y'], 
-            latest_row['gyro_z'], 
-            latest_row['time_elapsed'],    # Changed from time
-            latest_row['rocket_state'],    # Changed from state
-            latest_row['rssi'], 
-            latest_row['signal_to_noise']  # Changed from snr
-        )
-    #If the CSV file is not found, return None values
-    except Exception as e:
-        print(f"Error reading CSV: {e}")
-        return None, None, None, None, None, None, None, None, None, None
+# Queue for sharing data between threads
+data_queue = Queue(maxsize=1)
+
+# Current data storage
+current_data = {
+    'acceleration_x': 0,
+    'acceleration_y': 0,
+    'acceleration_z': 0,
+    'gyro_x': 0,
+    'gyro_y': 0,
+    'gyro_z': 0,
+    'time_elapsed': 0,
+    'rocket_state': 1,
+    'rssi': 0,
+    'signal_to_noise': 0
+}
+
+# Flag to track if connection is active
+is_connected = False
+
+# Set up CSV logging
+output_dir = "Flight_Logs"
+os.makedirs(output_dir, exist_ok=True)
+current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
+output_csv = os.path.join(output_dir, f"Flight_Data_{current_time}.csv")
+
+# Initialize CSV file
+with open(output_csv, mode='w', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(["acceleration_x", "acceleration_y", "acceleration_z", 
+                   "gyro_x", "gyro_y", "gyro_z", 
+                   "time_elapsed", "rocket_state", "rssi", "signal_to_noise"])
+
+print(f"Data will be saved to: {output_csv}")
+
+# Serial reader thread function
+def serial_reader():
+    global is_connected
+    ser = None
+    reconnect_delay = 2  # seconds
     
-#function to generate video feed 
+    while True:
+        # Try to connect if not connected
+        if not is_connected:
+            try:
+                # Close previous connection if exists
+                if ser is not None:
+                    ser.close()
+                
+                # Open new serial connection
+                ser = serial.Serial(port=SERIAL_PORT, baudrate=BAUDRATE, timeout=1)
+                time.sleep(reconnect_delay)  # Allow time for connection to establish
+                is_connected = True
+                print(f"Connected to {SERIAL_PORT}. Waiting for data...")
+            except Exception as e:
+                print(f"Connection failed: {e}. Retrying in {reconnect_delay} seconds...")
+                time.sleep(reconnect_delay)
+                continue
+        
+        # Read data if connected
+        try:
+            if ser.in_waiting:
+                line = ser.readline().decode('utf-8').strip()  # Read and decode serial data
+                if "+RCV=" in line:
+                    clean_data = line.replace("+RCV=", "")  # For old code it is Received: Recieved+RCV=
+                    data_values = clean_data.split(',')
+                    
+                    # Parse data values
+                    if len(data_values) >= 12:  # Ensure we have all expected values
+                        parsed_data = {
+                            'acceleration_x': int(data_values[2]),
+                            'acceleration_y': int(data_values[3]),
+                            'acceleration_z': int(data_values[4]),
+                            'gyro_x': int(data_values[5]),
+                            'gyro_y': int(data_values[6]),
+                            'gyro_z': int(data_values[7]),
+                            'time_elapsed': int(data_values[8]),
+                            'rocket_state': int(data_values[9]),
+                            'rssi': int(data_values[10]),
+                            'signal_to_noise': float(data_values[11])
+                        }
+                        
+                        # Save to CSV
+                        with open(output_csv, mode='a', newline='') as csvfile:
+                            writer = csv.writer(csvfile)
+                            writer.writerow([
+                                parsed_data['acceleration_x'], 
+                                parsed_data['acceleration_y'], 
+                                parsed_data['acceleration_z'],
+                                parsed_data['gyro_x'], 
+                                parsed_data['gyro_y'], 
+                                parsed_data['gyro_z'],
+                                parsed_data['time_elapsed'], 
+                                parsed_data['rocket_state'], 
+                                parsed_data['rssi'], 
+                                parsed_data['signal_to_noise']
+                            ])
+                        
+                        # Update current data with new values
+                        # If queue is full, replace the old data
+                        if data_queue.full():
+                            try:
+                                data_queue.get_nowait()
+                            except:
+                                pass
+                        data_queue.put(parsed_data)
+            
+            time.sleep(0.05)  # Small delay to prevent CPU hogging
+            
+        except serial.SerialException as e:
+            print(f"Serial connection lost: {e}. Attempting to reconnect...")
+            is_connected = False
+            time.sleep(reconnect_delay)
+        except Exception as e:
+            print(f"Error reading data: {e}")
+            time.sleep(0.5)  # Brief pause before trying again
+    
+    # Clean up
+    if ser is not None:
+        ser.close()
+
+# Function to read the latest data
+def read_latest_data():
+    global current_data
+    
+    # Try to get new data from queue
+    try:
+        if not data_queue.empty():
+            current_data = data_queue.get_nowait()
+    except:
+        pass  # Use the last known data if can't get new data
+    
+    # Return the current data values
+    return (
+        current_data['acceleration_x'],
+        current_data['acceleration_y'],
+        current_data['acceleration_z'],
+        current_data['gyro_x'],
+        current_data['gyro_y'],
+        current_data['gyro_z'],
+        current_data['time_elapsed'],
+        current_data['rocket_state'],
+        current_data['rssi'],
+        current_data['signal_to_noise']
+    )
+
 def generate_frames():
     while True:
         camera = cv2.VideoCapture(0)  # Use the first webcam
@@ -70,7 +196,6 @@ def generate_frames():
         finally:
             camera.release()
 
-# Gyroscope calculations, if no values are provided, default to 0
 def calculate_tilt(acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z):
     # Handle None values
     acc_x = acc_x if acc_x is not None else 0
@@ -97,34 +222,6 @@ def video_feed():
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 # Layout of the Dashboard
-app.layout = html.Div(
-    style={
-        'position': 'relative',
-        'width': '100vw',  # Full viewport width
-        'height': '100vh',  # Full viewport height
-        'overflow': 'hidden',  # Prevent overflow
-    },
-    children=[
-        # Background video
-        html.Img(
-            src="/video_feed",
-            style={
-                'position': 'fixed',
-                'top': '50%',
-                'left': '50%',
-                'transform': 'translate(-50%, -50%)',
-                'min-width': '100%',
-                'min-height': '100%',
-                'width': 'auto',
-                'height': 'auto',
-                'z-index': '-1',
-                'object-fit': 'cover',
-            },
-        ),
-    
-    ],
-)
-
 app.layout = html.Div([
     # Background video
     html.Img(
@@ -218,6 +315,15 @@ app.layout = html.Div([
         'padding': '5px 100px', 'border-radius': '10px',
     }),
 
+    # Connection status (new element)
+    html.Div([
+        html.H3(id='connection-status', style={'color': 'white'})
+    ], style={
+        'position': 'absolute', 'top': '20px', 'left': '20px',
+        'padding': '5px 15px', 'border-radius': '5px', 
+        'background-color': 'rgba(0, 0, 0, 0.5)'
+    }),
+
     # Mission time
     html.Div([
         html.H1("T+ 00:00:00", id='mission-time')
@@ -227,7 +333,6 @@ app.layout = html.Div([
         'border-radius': '10px', 'color': 'white','font-size': '24px',
     }),
 
-    #Gyroscope tilt reference line
     html.Div(
         style={
             'position': 'absolute',
@@ -294,14 +399,9 @@ app.layout = html.Div([
     dash.dependencies.Output('progress-bar', 'style'),
     [dash.dependencies.Input('interval-component', 'n_intervals')]
 )
-# Callback for updating the progress bar based on rocket state
 def update_progress(n):
     # Read latest data
     _, _, _, _, _, _, _, state, _, _ = read_latest_data()
-    
-    # If no data, use default
-    if state is None:
-        state = 1  # Default to first state
     
     # Map states to progress percentages
     stage_progress = {
@@ -314,6 +414,20 @@ def update_progress(n):
         'width': '10px', 'height': f"{progress_height}%",
         'background-color': 'white', 'transition': 'height 0.5s ease-in-out'
     }
+
+# Callback for updating connection status
+@app.callback(
+    dash.dependencies.Output('connection-status', 'children'),
+    dash.dependencies.Output('connection-status', 'style'),
+    [dash.dependencies.Input('interval-component', 'n_intervals')]
+)
+def update_connection_status(n):
+    global is_connected
+    
+    if is_connected:
+        return "CONNECTED", {'color': '#00FF00', 'backgroundColor': 'rgba(0, 0, 0, 0.5)'}
+    else:
+        return "DISCONNECTED", {'color': '#FF0000', 'backgroundColor': 'rgba(0, 0, 0, 0.5)'}
 
 @app.callback(
     dash.dependencies.Output('altitude', 'children'),
@@ -348,7 +462,6 @@ def update_data(n):
     dash.dependencies.Output('tilt-line', 'style'),
     [dash.dependencies.Input('interval-component', 'n_intervals')]
 )
-# Callback for updating the tilt line based on gyroscope data
 def update_tilt_line(n):
     # Read latest data
     accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z, _, _, _, _ = read_latest_data()
@@ -369,7 +482,11 @@ def update_tilt_line(n):
         'z-index': '20'
     }
 
-# Run the Dash app
+# Start the serial reader thread
 if __name__ == '__main__':
-    # Removed blue debug icon on bottom right 
-    app.run(debug=False)
+    # Start serial reader thread
+    serial_thread = threading.Thread(target=serial_reader, daemon=True)
+    serial_thread.start()
+    
+    # Run the Dash app
+    app.run(debug=False)  # Removed blue debug icon on bottom right
