@@ -8,6 +8,7 @@ import cv2
 from flask import Response, Flask
 import numpy as np
 import math
+import glob
 
 # Initialize Flask server
 server = Flask(__name__)
@@ -15,37 +16,99 @@ server = Flask(__name__)
 # Initialize Dash
 app = dash.Dash(__name__, server=server)
 
-# CSV file path
-CSV_FILE_PATH = 'parsed_data.csv'
+# Flight logs directory
+LOGS_DIR = "Flight_Logs"
 
 # Define rocket states
 rocket_states = ["INIT", "Idle", "Boost", "Apogee", "Drogue", "Main", "Landed"]
 
+# Last file check time and current file
+last_file_check = 0
+current_file = None
+last_read_line = 0
+
+# Function to find the most recent CSV file in the logs directory
+def find_latest_csv():
+    global current_file, last_file_check
+    
+    # Only check for a new file every 5 seconds to avoid excessive file system operations
+    current_time = time.time()
+    if current_time - last_file_check < 5 and current_file is not None:
+        return current_file
+    
+    # Update the last check time
+    last_file_check = current_time
+    
+    try:
+        # Get all CSV files in the logs directory
+        files = glob.glob(os.path.join(LOGS_DIR, "Flight_Data_*.csv"))
+        
+        if not files:
+            print("No CSV files found in the logs directory.")
+            return None
+        
+        # Sort files by modification time (newest first)
+        files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
+        
+        # Get the most recent file
+        latest_file = files[0]
+        
+        # Check if the file has changed
+        if latest_file != current_file:
+            print(f"New log file detected: {latest_file}")
+            current_file = latest_file
+            # Reset line counter when switching to a new file
+            global last_read_line
+            last_read_line = 0
+        
+        return latest_file
+    
+    except Exception as e:
+        print(f"Error finding latest CSV file: {e}")
+        return None
+
 # Function to read the latest data from CSV
 def read_latest_data():
+    csv_file = find_latest_csv()
+    
+    if csv_file is None:
+        return None, None, None, None, None, None, None, None, None, None
+    
     try:
         # Read actual data from CSV
-        df = pd.read_csv(CSV_FILE_PATH)
-        latest_row = df.iloc[-1]
+        df = pd.read_csv(csv_file)
+        
+        # Check if there are new lines to read
+        global last_read_line
+        if len(df) <= last_read_line:
+            # No new data
+            if last_read_line > 0:
+                # Return the last known data
+                latest_row = df.iloc[last_read_line - 1]
+            else:
+                # No data yet
+                return None, None, None, None, None, None, None, None, None, None
+        else:
+            # New data available
+            latest_row = df.iloc[-1]
+            last_read_line = len(df)
         
         return (
-            latest_row['acceleration_x'],  # Changed from accel_x 
-            latest_row['acceleration_y'],  # Changed from accel_y
-            latest_row['acceleration_z'],  # Changed from accel_z
+            latest_row['acceleration_x'],
+            latest_row['acceleration_y'],
+            latest_row['acceleration_z'],
             latest_row['gyro_x'], 
             latest_row['gyro_y'], 
             latest_row['gyro_z'], 
-            latest_row['time_elapsed'],    # Changed from time
-            latest_row['rocket_state'],    # Changed from state
+            latest_row['time_elapsed'],
+            latest_row['rocket_state'],
             latest_row['rssi'], 
-            latest_row['signal_to_noise']  # Changed from snr
+            latest_row['signal_to_noise']
         )
-    #If the CSV file is not found, return None values
     except Exception as e:
         print(f"Error reading CSV: {e}")
         return None, None, None, None, None, None, None, None, None, None
-    
-#function to generate video feed 
+
 def generate_frames():
     while True:
         camera = cv2.VideoCapture(0)  # Use the first webcam
@@ -70,7 +133,6 @@ def generate_frames():
         finally:
             camera.release()
 
-# Gyroscope calculations, if no values are provided, default to 0
 def calculate_tilt(acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z):
     # Handle None values
     acc_x = acc_x if acc_x is not None else 0
@@ -97,34 +159,6 @@ def video_feed():
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 # Layout of the Dashboard
-app.layout = html.Div(
-    style={
-        'position': 'relative',
-        'width': '100vw',  # Full viewport width
-        'height': '100vh',  # Full viewport height
-        'overflow': 'hidden',  # Prevent overflow
-    },
-    children=[
-        # Background video
-        html.Img(
-            src="/video_feed",
-            style={
-                'position': 'fixed',
-                'top': '50%',
-                'left': '50%',
-                'transform': 'translate(-50%, -50%)',
-                'min-width': '100%',
-                'min-height': '100%',
-                'width': 'auto',
-                'height': 'auto',
-                'z-index': '-1',
-                'object-fit': 'cover',
-            },
-        ),
-    
-    ],
-)
-
 app.layout = html.Div([
     # Background video
     html.Img(
@@ -218,6 +252,15 @@ app.layout = html.Div([
         'padding': '5px 100px', 'border-radius': '10px',
     }),
 
+    # File status (new element)
+    html.Div([
+        html.H3(id='file-status', style={'color': 'white', 'font-size': '14px'})
+    ], style={
+        'position': 'absolute', 'top': '20px', 'left': '20px',
+        'padding': '5px 15px', 'border-radius': '5px', 
+        'background-color': 'rgba(0, 0, 0, 0.5)'
+    }),
+
     # Mission time
     html.Div([
         html.H1("T+ 00:00:00", id='mission-time')
@@ -227,7 +270,6 @@ app.layout = html.Div([
         'border-radius': '10px', 'color': 'white','font-size': '24px',
     }),
 
-    #Gyroscope tilt reference line
     html.Div(
         style={
             'position': 'absolute',
@@ -294,7 +336,6 @@ app.layout = html.Div([
     dash.dependencies.Output('progress-bar', 'style'),
     [dash.dependencies.Input('interval-component', 'n_intervals')]
 )
-# Callback for updating the progress bar based on rocket state
 def update_progress(n):
     # Read latest data
     _, _, _, _, _, _, _, state, _, _ = read_latest_data()
@@ -308,12 +349,27 @@ def update_progress(n):
         7: 100, 6: 84, 5: 70, 4: 56, 3: 42, 2: 28, 1: 17
     }
     
-    progress_height = stage_progress.get(state, 17)
+    progress_height = stage_progress.get(int(state), 17)
     
     return {
         'width': '10px', 'height': f"{progress_height}%",
         'background-color': 'white', 'transition': 'height 0.5s ease-in-out'
     }
+
+# Callback for updating file status
+@app.callback(
+    dash.dependencies.Output('file-status', 'children'),
+    [dash.dependencies.Input('interval-component', 'n_intervals')]
+)
+def update_file_status(n):
+    global current_file
+    
+    if current_file:
+        # Extract just the filename from the path
+        filename = os.path.basename(current_file)
+        return f"READING: {filename}"
+    else:
+        return "NO LOG FILE FOUND"
 
 @app.callback(
     dash.dependencies.Output('altitude', 'children'),
@@ -348,7 +404,6 @@ def update_data(n):
     dash.dependencies.Output('tilt-line', 'style'),
     [dash.dependencies.Input('interval-component', 'n_intervals')]
 )
-# Callback for updating the tilt line based on gyroscope data
 def update_tilt_line(n):
     # Read latest data
     accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z, _, _, _, _ = read_latest_data()
@@ -371,5 +426,11 @@ def update_tilt_line(n):
 
 # Run the Dash app
 if __name__ == '__main__':
-    # Removed blue debug icon on bottom right 
-    app.run(debug=False)
+    # Create logs directory if it doesn't exist
+    os.makedirs(LOGS_DIR, exist_ok=True)
+    
+    # Initial check for the latest CSV file
+    find_latest_csv()
+    
+    # Run the Dash app
+    app.run(debug=False)  # Removed blue debug icon on bottom right

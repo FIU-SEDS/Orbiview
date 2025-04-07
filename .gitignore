@@ -1,3 +1,3 @@
 my_env/
-dash/Flight_Logs
-hud/__pycache__
+/Flight_Logs
+/__pycache__
