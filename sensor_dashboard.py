@@ -15,7 +15,8 @@ class SerialThread(QThread):
     connection_status_changed = pyqtSignal(bool, str)  # New signal for connection status
     
     # change port to /dev/ttyUSB# for linux
-    def __init__(self, port='COM13', baudrate=115200):
+    #change port to /dev/cu.usbserial-0001 for mac
+    def __init__(self, port='/dev/cu.usbserial-0001', baudrate=115200):
         super().__init__()
         self.port = port
         self.baudrate = baudrate
@@ -126,7 +127,7 @@ class SerialThread(QThread):
 
 class SensorDashboard(QMainWindow):
     # change port to /dev/ttyUSB# for linux
-    def __init__(self, serial_port='COM13', baudrate=115200):
+    def __init__(self, serial_port='/dev/cu.usbserial-0001', baudrate=115200):
         super().__init__()
         
         # Set window title and size
@@ -506,7 +507,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     
     # window = SensorDashboard(serial_port='/dev/ttyUSB0', baudrate=115200) # linux
-    window = SensorDashboard(serial_port='COM13', baudrate=115200) # windows
+    window = SensorDashboard(serial_port='/dev/cu.usbserial-0001', baudrate=115200) # windows
     
     window.show()
     

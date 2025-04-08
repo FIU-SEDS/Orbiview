@@ -387,8 +387,8 @@ def update_data(n):
     
     # Format mission time
     if time_val is not None:
-        minutes = int(time_val // 60)
-        seconds = int(time_val % 60)
+        minutes = int((time_val // 4) // 60)
+        seconds = int((time_val // 4) % 60)
         centiseconds = int((time_val % 1) * 100)
         elapsed_time = f"T+ {minutes:02}:{seconds:02}:{centiseconds:02}"
     else:
