@@ -252,15 +252,6 @@ app.layout = html.Div([
         'padding': '5px 100px', 'border-radius': '10px',
     }),
 
-    # File status (new element)
-    html.Div([
-        html.H3(id='file-status', style={'color': 'white', 'font-size': '14px'})
-    ], style={
-        'position': 'absolute', 'top': '20px', 'left': '20px',
-        'padding': '5px 15px', 'border-radius': '5px', 
-        'background-color': 'rgba(0, 0, 0, 0.5)'
-    }),
-
     # Mission time
     html.Div([
         html.H1("T+ 00:00:00", id='mission-time')
@@ -355,21 +346,6 @@ def update_progress(n):
         'width': '10px', 'height': f"{progress_height}%",
         'background-color': 'white', 'transition': 'height 0.5s ease-in-out'
     }
-
-# Callback for updating file status
-@app.callback(
-    dash.dependencies.Output('file-status', 'children'),
-    [dash.dependencies.Input('interval-component', 'n_intervals')]
-)
-def update_file_status(n):
-    global current_file
-    
-    if current_file:
-        # Extract just the filename from the path
-        filename = os.path.basename(current_file)
-        return f"READING: {filename}"
-    else:
-        return "NO LOG FILE FOUND"
 
 @app.callback(
     dash.dependencies.Output('altitude', 'children'),
