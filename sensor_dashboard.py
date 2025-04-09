@@ -10,7 +10,6 @@ from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal
 from PyQt6.QtGui import QFont, QColor
 import pyqtgraph as pg
 import os
-# Import serial port listing functionality
 from serial.tools import list_ports
 
 class PortSelectionDialog(QDialog):

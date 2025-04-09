@@ -22,11 +22,11 @@ python -m PyInstaller --onefile --windowed --icon=dashboard_icon.ico sensor_dash
 ## Requirements
 
 Needs to have the following:
-PyQt6 pyqtgraph numpy pyinstaller
+PyQt6 pyqtgraph numpy pyinstaller pyserial
 
 Install with the following:
 ```bash
-pip install PyQt6 pyqtgraph numpy pyinstaller
+pip install PyQt6 pyqtgraph numpy pyinstaller pyserial
 ```
 
 Make sure you have the most recent version of pip by updating:

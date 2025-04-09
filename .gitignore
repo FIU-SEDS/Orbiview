@@ -1,3 +1,4 @@
 my_env/
 /Flight_Logs
 /__pycache__
+/.venv
