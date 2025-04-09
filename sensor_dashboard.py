@@ -4,19 +4,132 @@ import csv
 import serial
 import time
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
-                            QHBoxLayout, QLabel, QGridLayout)
+                            QHBoxLayout, QLabel, QGridLayout, QComboBox, QPushButton,
+                            QDialog, QDialogButtonBox)
 from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal
 from PyQt6.QtGui import QFont, QColor
 import pyqtgraph as pg
 import os
+# Import serial port listing functionality
+from serial.tools import list_ports
+
+class PortSelectionDialog(QDialog):
+    """Dialog for selecting a serial port"""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Select Serial Port")
+        self.resize(400, 200)
+        
+        # Set dark theme
+        self.setStyleSheet("""
+            QDialog, QWidget {
+                background-color: #0D0D0D;
+                color: #FFFFFF;
+            }
+            QLabel {
+                color: #FFFFFF;
+                font-weight: bold;
+            }
+            QComboBox {
+                background-color: #222222;
+                color: #FFFFFF;
+                border: 1px solid #555555;
+                padding: 5px;
+                min-height: 25px;
+            }
+            QPushButton {
+                background-color: #FFFFFF;
+                color: #0D0D0D;
+                border: none;
+                padding: 8px 16px;
+                min-height: 30px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #E0E0E0;
+            }
+            QPushButton:pressed {
+                background-color: #CCCCCC;
+            }
+        """)
+        
+        layout = QVBoxLayout()
+        
+        # Label
+        self.label = QLabel("Reciever Serial Port:")
+        self.label.setFont(QFont("Arial", 11))
+        layout.addWidget(self.label)
+        
+        # Port selection dropdown
+        self.port_combo = QComboBox()
+        self.port_combo.setFont(QFont("Arial", 10))
+        layout.addWidget(self.port_combo)
+        
+        # Baud rate selection dropdown
+        baud_layout = QHBoxLayout()
+        self.baud_label = QLabel("Baud Rate:")
+        self.baud_label.setFont(QFont("Arial", 11))
+        self.baud_combo = QComboBox()
+        self.baud_combo.addItems(["9600", "19200", "38400", "57600", "115200"])
+        self.baud_combo.setCurrentText("115200")  # Default to 115200
+        baud_layout.addWidget(self.baud_label)
+        baud_layout.addWidget(self.baud_combo)
+        layout.addLayout(baud_layout)
+        
+        # Refresh button
+        self.refresh_button = QPushButton("Refresh Ports")
+        self.refresh_button.clicked.connect(self.populate_ports)
+        layout.addWidget(self.refresh_button)
+        
+        # OK/Cancel buttons
+        self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | 
+                                           QDialogButtonBox.StandardButton.Cancel)
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
+        layout.addWidget(self.button_box)
+        
+        self.setLayout(layout)
+        
+        # Populate ports initially
+        self.populate_ports()
+    
+    def populate_ports(self):
+        """Find all available serial ports and add them to the combo box"""
+        self.port_combo.clear()
+        ports = self.get_serial_ports()
+        
+        if not ports:
+            self.port_combo.addItem("No ports found")
+            self.button_box.button(QDialogButtonBox.StandardButton.Ok).setEnabled(False)
+        else:
+            for port, desc, hwid in ports:
+                self.port_combo.addItem(f"{port} - {desc}")
+            self.button_box.button(QDialogButtonBox.StandardButton.Ok).setEnabled(True)
+    
+    def get_serial_ports(self):
+        """Get a list of available serial ports"""
+        return sorted(list_ports.comports())
+    
+    def get_selected_port(self):
+        """Return the currently selected port"""
+        if self.port_combo.currentText() == "No ports found":
+            return None
+        
+        # Extract just the port name before the dash
+        port_text = self.port_combo.currentText()
+        return port_text.split(" - ")[0]
+    
+    def get_selected_baudrate(self):
+        """Return the selected baud rate as an integer"""
+        return int(self.baud_combo.currentText())
+
 
 class SerialThread(QThread):
     data_received = pyqtSignal(list)
-    connection_status_changed = pyqtSignal(bool, str)  # New signal for connection status
+    connection_status_changed = pyqtSignal(bool, str)  # Signal for connection status
     
-    # change port to /dev/ttyUSB# for linux
-    #change port to /dev/cu.usbserial-0001 for mac
-    def __init__(self, port='/dev/cu.usbserial-0001', baudrate=115200):
+    def __init__(self, port=None, baudrate=115200):
         super().__init__()
         self.port = port
         self.baudrate = baudrate
@@ -38,13 +151,29 @@ class SerialThread(QThread):
                            "time_elapsed", "rocket_state", "rssi", "signal_to_noise"])
         
         print(f"Data will be saved to: {self.output_csv}")
-        print(f"Attempting to connect to {port} at {baudrate} baud...")
+        if self.port:
+            print(f"Attempting to connect to {port} at {baudrate} baud...")
+    
+    def set_port(self, port, baudrate=None):
+        """Update the port and optionally the baudrate"""
+        self.port = port
+        if baudrate:
+            self.baudrate = baudrate
+        
+        # Reset connection
+        self.connected = False
+        print(f"Port updated to {port}, baudrate {self.baudrate}")
     
     def run(self):
         ser = None
         reconnect_delay = 2  # seconds
         
         while self.running:
+            # Skip connection attempts if no port is specified
+            if not self.port:
+                time.sleep(1)
+                continue
+                
             # Try to connect if not connected
             if not self.connected:
                 try:
@@ -63,6 +192,7 @@ class SerialThread(QThread):
 
                 except Exception as e:
                     print(f"Connection failed: {e}. Retrying in {reconnect_delay} seconds...")
+                    self.connection_status_changed.emit(False, f"CONNECTION FAILED: {str(e)[:20]}")
                     time.sleep(reconnect_delay)
                     continue
             
@@ -110,7 +240,7 @@ class SerialThread(QThread):
                 self.connected = False
                 
                 # Emit signal instead of directly accessing UI elements
-                self.connection_status_changed.emit(False, "RECONNECT RECIEVER")
+                self.connection_status_changed.emit(False, "RECONNECT RECEIVER")
                 
                 time.sleep(reconnect_delay)
             except Exception as e:
@@ -125,25 +255,28 @@ class SerialThread(QThread):
         self.running = False
         self.wait()
 
+
 class SensorDashboard(QMainWindow):
-    # change port to /dev/ttyUSB# for linux
-    def __init__(self, serial_port='/dev/cu.usbserial-0001', baudrate=115200):
+    def __init__(self):
         super().__init__()
         
         # Set window title and size
         self.setWindowTitle("Sensor Dashboard")
         self.setGeometry(100, 100, 1200, 800)
         
-        # Create the UI elements first
+        # Create the UI elements
         self.init_ui()
         
-        # Setup serial communication thread
-        self.serial_thread = SerialThread(port=serial_port, baudrate=baudrate)
+        # Setup serial thread initially with no port
+        self.serial_thread = SerialThread()
         self.serial_thread.data_received.connect(self.update_with_serial_data)
         self.serial_thread.connection_status_changed.connect(self.update_connection_status)
         
         # Start serial thread
         self.serial_thread.start()
+        
+        # Show port selection dialog on startup
+        self.show_port_selection()
     
     def init_ui(self):
         """Initialize all UI elements"""
@@ -157,6 +290,21 @@ class SensorDashboard(QMainWindow):
                 color: #FFFFFF;
                 font-weight: bold;
             }
+            QPushButton {
+                background-color: #FFFFFF;
+                color: #0D0D0D;
+                border: none;
+                padding: 8px 16px;
+                min-height: 30px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #E0E0E0;
+            }
+            QPushButton:pressed {
+                background-color: #CCCCCC;
+            }
         """)
         
         # Create main widget and layout
@@ -164,6 +312,13 @@ class SensorDashboard(QMainWindow):
         main_layout = QVBoxLayout()
         main_widget.setLayout(main_layout)
         self.setCentralWidget(main_widget)
+        
+        # Create port selection button
+        port_button_layout = QHBoxLayout()
+        self.port_button = QPushButton("Change Port")
+        self.port_button.clicked.connect(self.show_port_selection)
+        port_button_layout.addWidget(self.port_button)
+        port_button_layout.addStretch()  # Push button to the left
         
         # Create top layout for graphs (2x2 grid)
         graphs_widget = QWidget()
@@ -191,7 +346,7 @@ class SensorDashboard(QMainWindow):
         telemetry_title = QLabel("Telemetry")
         telemetry_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         telemetry_title.setFont(QFont("Arial", 14))
-        self.OnOrOff = QLabel("🔴⚪Reciever          🔴⚪Signal")
+        self.OnOrOff = QLabel("🔴⚪Receiver          🔴⚪Signal")
         self.OnOrOff.setAlignment(Qt.AlignmentFlag.AlignCenter)
         telemetry_layout.addWidget(telemetry_title)
         telemetry_layout.addWidget(self.OnOrOff)
@@ -223,6 +378,9 @@ class SensorDashboard(QMainWindow):
         
         telemetry_layout.addWidget(telemetry_values)
         
+        # Add port button to main layout
+        main_layout.addLayout(port_button_layout)
+        
         # Add widgets to main layout
         main_layout.addWidget(graphs_widget, 4)  # 80% of height
         main_layout.addWidget(telemetry_widget, 1)  # 20% of height
@@ -231,14 +389,26 @@ class SensorDashboard(QMainWindow):
         self.setup_graph_data()
         self.setup_timers()
     
+    def show_port_selection(self):
+        """Show the port selection dialog"""
+        dialog = PortSelectionDialog(self)
+        if dialog.exec():
+            selected_port = dialog.get_selected_port()
+            selected_baudrate = dialog.get_selected_baudrate()
+            
+            if selected_port:
+                # Update the serial thread with new port/baudrate
+                self.serial_thread.set_port(selected_port, selected_baudrate)
+                self.state.value_label.setText(f"CONNECTING TO {selected_port}...")
+    
     def update_connection_status(self, is_connected, status_message):
         """Handler for connection status changes"""
         if is_connected:
             self.state.value_label.setText(status_message)
-            self.OnOrOff.setText("⚪🟢Reciever          🔴⚪Signal")
+            self.OnOrOff.setText("⚪🟢Receiver          🔴⚪Signal")
         else:
             self.state.value_label.setText(status_message)
-            self.OnOrOff.setText("🔴⚪Reciever          🔴⚪Signal")
+            self.OnOrOff.setText("🔴⚪Receiver          🔴⚪Signal")
     
     def create_graph_panel(self, title):
         # Create widget for the graph panel
@@ -345,7 +515,7 @@ class SensorDashboard(QMainWindow):
         
         # Set initial connection state
         self.is_connected = False
-        self.state.value_label.setText("CONNECT RECIEVER")
+        self.state.value_label.setText("SELECT PORT")
         
         # Create legends
         self.create_legend(self.accel_graph, ["accel_x", "accel_y", "accel_z"])
@@ -380,7 +550,7 @@ class SensorDashboard(QMainWindow):
             if self.is_connected:
                 self.is_connected = False
                 self.state.value_label.setText("CONNECTION LOST")
-                self.OnOrOff.setText("⚪🟢Reciever          🔴⚪Signal")
+                self.OnOrOff.setText("⚪🟢Receiver          🔴⚪Signal")
                 
                 # Reset values when disconnected
                 self.accel_x.value_label.setText("--")
@@ -493,7 +663,7 @@ class SensorDashboard(QMainWindow):
             self.state.value_label.setText("LAND")
 
         # Update ON/OFF label
-        self.OnOrOff.setText("⚪🟢Reciever          ⚪🟢Signal")
+        self.OnOrOff.setText("⚪🟢Receiver          ⚪🟢Signal")
         
 
     def closeEvent(self, event):
@@ -503,12 +673,12 @@ class SensorDashboard(QMainWindow):
             self.serial_thread.stop()
         event.accept()
 
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     
-    # window = SensorDashboard(serial_port='/dev/ttyUSB0', baudrate=115200) # linux
-    window = SensorDashboard(serial_port='/dev/cu.usbserial-0001', baudrate=115200) # windows
-    
+    # Create main window without specifying port initially
+    window = SensorDashboard()
     window.show()
     
     sys.exit(app.exec())
