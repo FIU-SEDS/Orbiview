@@ -26,7 +26,7 @@ PyQt6 pyqtgraph numpy pyinstaller pyserial
 
 Install with the following:
 ```bash
-pip install PyQt6 pyqtgraph numpy pyinstaller pyserial
+pip install PyQt6 pyqtgraph numpy pyinstaller pyserial dash plotly flash pandas opencv-python
 ```
 
 Make sure you have the most recent version of pip by updating:
