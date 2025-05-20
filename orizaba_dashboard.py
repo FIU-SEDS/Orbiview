@@ -141,13 +141,15 @@ class SerialThread(QThread):
         # Generate a timestamp-based filename
         current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
         self.output_csv = os.path.join(output_dir, f"Flight_Data_{current_time}.csv")
-        
+        #REVIEW HOW TIME IS BEING OBTAINED
+
+
         # Initialize CSV file
         with open(self.output_csv, mode='w', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow(["acceleration_x", "acceleration_y", "acceleration_z", 
-                           "gyro_x", "gyro_y", "gyro_z", 
-                           "time_elapsed", "rocket_state", "rssi", "signal_to_noise"])
+            writer.writerow(["linear_acceleration_x", "linear_acceleration_y", "linear_acceleration_z", 
+                           "Altitude", "Pressure", "gyro_z", 
+                           "time_elapsed", "rocket_state", "Z_axis_G_force", "Temperature"])
         
         print(f"Data will be saved to: {self.output_csv}")
         if self.port:
@@ -208,28 +210,25 @@ class SerialThread(QThread):
                             acceleration_x = int(data_values[2])
                             acceleration_y = int(data_values[3])
                             acceleration_z = int(data_values[4])
-                            gyro_x = int(data_values[5])
-                            gyro_y = int(data_values[6])
-                            gyro_z = int(data_values[7])
-                            time_elapsed = int(data_values[8])
-                            rocket_state = data_values[9]
-                            rssi = int(data_values[10])
-                            signal_to_noise = float(data_values[11])
+                            Altitude = int(data_values[5])
+                            Pressure = int(data_values[6])
+                            time_elapsed = int(data_values[7])
+                            rocket_state = data_values[8]
+                            Z_axis_G_force = int(data_values[9])
+                            Temperature = float(data_values[10])
                             
                             # Save to CSV
                             with open(self.output_csv, mode='a', newline='') as csvfile:
                                 writer = csv.writer(csvfile)
                                 writer.writerow([
                                     acceleration_x, acceleration_y, acceleration_z,
-                                    gyro_x, gyro_y, gyro_z,
-                                    time_elapsed, rocket_state, rssi, signal_to_noise
+                                    Altitude, Pressure, time_elapsed, rocket_state, Z_axis_G_force, Temperature,
                                 ])
                             
                             # Emit signal with parsed data
                             self.data_received.emit([
                                 acceleration_x, acceleration_y, acceleration_z,
-                                gyro_x, gyro_y, gyro_z,
-                                time_elapsed, rocket_state, rssi, signal_to_noise
+                                Altitude, Pressure, time_elapsed, rocket_state, Z_axis_G_force, Temperature
                             ])
                 
                 time.sleep(0.05)  # Small delay to prevent CPU hogging
@@ -325,16 +324,16 @@ class SensorDashboard(QMainWindow):
         graphs_widget.setLayout(graphs_layout)
         
         # Create the four graph panels
-        self.accel_graph = self.create_graph_panel("Acceleration")
-        self.gyro_graph = self.create_graph_panel("Gyroscope")
-        self.rssi_graph = self.create_graph_panel("RSSI")
-        self.snr_graph = self.create_graph_panel("Signal To Noise")
+        self.linear_accel_graph = self.create_graph_panel("Linear Acceleration")
+        self.barometer_graph = self.create_graph_panel("Barometer")
+        self.Z_axis_G_force_graph = self.create_graph_panel("Z_axis_G_force")
+        self.temp_graph = self.create_graph_panel("Temperature")
         
         # Add graph panels to the grid layout
-        graphs_layout.addWidget(self.accel_graph, 0, 0)
-        graphs_layout.addWidget(self.gyro_graph, 0, 1)
-        graphs_layout.addWidget(self.rssi_graph, 1, 0)
-        graphs_layout.addWidget(self.snr_graph, 1, 1)
+        graphs_layout.addWidget(self.linear_accel_graph, 0, 0)
+        graphs_layout.addWidget(self.barometer_graph, 0, 1)
+        graphs_layout.addWidget(self.Z_axis_G_force_graph, 1, 0)
+        graphs_layout.addWidget(self.temp_graph, 1, 1)
         
         # Create bottom telemetry panel
         telemetry_widget = QWidget()
@@ -356,22 +355,22 @@ class SensorDashboard(QMainWindow):
         telemetry_values.setLayout(values_layout)
         
         # Create each telemetry value display
-        self.accel_x = self.create_telemetry_value("Acceleration X", "--")
-        self.accel_y = self.create_telemetry_value("Acceleration Y", "--")
-        self.accel_z = self.create_telemetry_value("Acceleration Z", "--")
-        self.gyro_x = self.create_telemetry_value("Gyro X", "--")
-        self.gyro_y = self.create_telemetry_value("Gyro Y", "--")
-        self.gyro_z = self.create_telemetry_value("Gyro Z", "--")
+        self.linear_vel_z = self.create_telemetry_value("Linear Velocity Z", "--")
+        self.altitude = self.create_telemetry_value("Altitude", "--")
+        self.temp = self.create_telemetry_value("Temperature", "--")
+        self.heading = self.create_telemetry_value("Heading", "--")
+        self.longitude = self.create_telemetry_value("Longitude", "--")
+        self.latitude = self.create_telemetry_value("Latitude", "--")
         self.time = self.create_telemetry_value("Time", "--")
         self.state = self.create_telemetry_value("State", "--")
         
         # Add telemetry values to layout
-        values_layout.addWidget(self.accel_x)
-        values_layout.addWidget(self.accel_y)
-        values_layout.addWidget(self.accel_z)
-        values_layout.addWidget(self.gyro_x)
-        values_layout.addWidget(self.gyro_y)
-        values_layout.addWidget(self.gyro_z)
+        values_layout.addWidget(self.linear_vel_z)
+        values_layout.addWidget(self.altitude)
+        values_layout.addWidget(self.temp)
+        values_layout.addWidget(self.heading)
+        values_layout.addWidget(self.longitude)
+        values_layout.addWidget(self.latitude)
         values_layout.addWidget(self.time)
         values_layout.addWidget(self.state)
         
@@ -463,75 +462,70 @@ class SensorDashboard(QMainWindow):
     
     def setup_graph_data(self):
         # Create empty lists to store data
-        self.accel_x_data = []
-        self.accel_y_data = []
-        self.accel_z_data = []
-        self.gyro_x_data = []
-        self.gyro_y_data = []
-        self.gyro_z_data = []
-        self.rssi_data = []
-        self.snr_data = []
-        self.time_data = []  
+        self.linear_vel_z_data = []
+        self.altitude_data = []
+        self.temp_data = []
+        self.heading_data = []
+        self.lon_data = []
+        self.lat_data = []
+        self.time_data = []
+        self.state_data = []  
         
         # Create variable to track if received enough data to start plotting
         self.has_data = False
         self.max_points = 500  # Maximum number of points to display
         
         # Create plot lines with empty data initially
-        self.accel_x_line = self.accel_graph.plot_widget.plot(
-            [], [], pen=pg.mkPen(color='#3498db', width=2), name="acceleration_x"
+        self.linear_accel_x_line = self.accel_graph.plot_widget.plot(
+            [], [], pen=pg.mkPen(color='#3498db', width=2), name="linear_acceleration_X"
         )
-        self.accel_y_line = self.accel_graph.plot_widget.plot(
-            [], [], pen=pg.mkPen(color='#2ecc71', width=2), name="acceleration_y"
+        self.linear_accel_y_line = self.accel_graph.plot_widget.plot(
+            [], [], pen=pg.mkPen(color='#2ecc71', width=2), name="linear_acceleration_y"
         )
-        self.accel_z_line = self.accel_graph.plot_widget.plot(
-            [], [], pen=pg.mkPen(color='#e74c3c', width=2), name="acceleration_z"
-        )
-        
-        self.gyro_x_line = self.gyro_graph.plot_widget.plot(
-            [], [], pen=pg.mkPen(color='#3498db', width=2), name="gyro_x"
-        )
-        self.gyro_y_line = self.gyro_graph.plot_widget.plot(
-            [], [], pen=pg.mkPen(color='#e74c3c', width=2), name="gyro_y"
-        )
-        self.gyro_z_line = self.gyro_graph.plot_widget.plot(
-            [], [], pen=pg.mkPen(color='#f1c40f', width=2), name="gyro_z"
+        self.linear_accel_z_line = self.accel_graph.plot_widget.plot(
+            [], [], pen=pg.mkPen(color='#e74c3c', width=2), name="linear_acceleration_z"
         )
         
-        self.rssi_line = self.rssi_graph.plot_widget.plot(
-            [], [], pen=pg.mkPen(color='#FFFFFF', width=2), name="rssi"
+        self.altitude_line = self.gyro_graph.plot_widget.plot(
+            [], [], pen=pg.mkPen(color='#3498db', width=2), name="Altitude"
+        )
+        self.pressure_line = self.gyro_graph.plot_widget.plot(
+            [], [], pen=pg.mkPen(color='#e74c3c', width=2), name="Pressure"
+        )
+        self.Z_axis_G_force_line = self.gyro_graph.plot_widget.plot(
+            [], [], pen=pg.mkPen(color='#e74c3c', width=2), name="Z-Axis G-Force"
+        )
+        self.temp_line = self.Z_axis_G_force_graph.plot_widget.plot(
+            [], [], pen=pg.mkPen(color='#FFFFFF', width=2), name="Temperature"
         )
         
-        self.snr_line = self.snr_graph.plot_widget.plot(
-            [], [], pen=pg.mkPen(color='#3498db', width=2), name="snr"
-        )
+
+        # Set y-axis ranges, FIND CORRECT X & Y
+        self.linear_accel_graph.plot_widget.setYRange(0, 1500)
+        self.barometer_graph.plot_widget.setYRange(-150000, 150000)
+        self.Z_axis_G_force_graph.plot_widget.setYRange(-50, 0)
+        self.temp_graph.plot_widget.setYRange(0, 12)
         
-        # Set y-axis ranges
-        self.accel_graph.plot_widget.setYRange(-1000, 1500)
-        self.gyro_graph.plot_widget.setYRange(-150000, 150000)
-        self.rssi_graph.plot_widget.setYRange(-50, 0)
-        self.snr_graph.plot_widget.setYRange(0, 12)
-        
+
         # Set initial connection state
         self.is_connected = False
         self.state.value_label.setText("SELECT PORT")
         
         # Create legends
-        self.create_legend(self.accel_graph, ["accel_x", "accel_y", "accel_z"])
-        self.create_legend(self.gyro_graph, ["gyro_x", "gyro_y", "gyro_z"])
+        self.create_legend(self.linear_accel_graph, ["linear_acc_x", "linear_acc_y", "linear_acc_z"])
+        self.create_legend(self.barometer_graph, ["Altitude", "Pressure"])
     
     def create_legend(self, graph_panel, items):
         legend = pg.LegendItem(offset=(70, 30))
         legend.setParentItem(graph_panel.plot_widget.graphicsItem())
         
-        if "accel_x" in items:
-            legend.addItem(self.accel_x_line, "acceleration_x")
-            legend.addItem(self.accel_y_line, "acceleration_y")
-            legend.addItem(self.accel_z_line, "acceleration_z")
-        elif "gyro_x" in items:
-            legend.addItem(self.gyro_x_line, "gyro_x")
-            legend.addItem(self.gyro_y_line, "gyro_y")
-            legend.addItem(self.gyro_z_line, "gyro_z")
+        if "linear_accel_x" in items:
+            legend.addItem(self._line, "linear_acceleration_x")
+            legend.addItem(self.altitude_line, "linear_acceleration_y")
+            legend.addItem(self.temp_line, "linear_acceleration_z")
+        elif "Altitude" in items:
+            legend.addItem(self.altitude_line, "Altitude")
+            legend.addItem(self.pressure_line, "Pressure")
     
     def setup_timers(self):
         # Create a timer to check connection status
@@ -552,45 +546,44 @@ class SensorDashboard(QMainWindow):
                 self.OnOrOff.setText("⚪🟢Receiver          🔴⚪Signal")
                 
                 # Reset values when disconnected
-                self.accel_x.value_label.setText("--")
-                self.accel_y.value_label.setText("--")
-                self.accel_z.value_label.setText("--")
-                self.gyro_x.value_label.setText("--")
-                self.gyro_y.value_label.setText("--")
-                self.gyro_z.value_label.setText("--")
+                self.linear_accel_x.value_label.setText("--")
+                self.linear_accel_y.value_label.setText("--")
+                self.linear_accel_z.value_label.setText("--")
+                self.Altitude.value_label.setText("--")
+                self.Pressure.value_label.setText("--")
                 self.time.value_label.setText("--")
 
                 # Clear all graph data
                 self.time_data = []
-                self.accel_x_data = []
-                self.accel_y_data = []
-                self.accel_z_data = []
-                self.gyro_x_data = []
-                self.gyro_y_data = []
-                self.gyro_z_data = []
-                self.rssi_data = []
-                self.snr_data = []
+                self.linear_accel_x_data = []
+                self.linear_accel_y_data = []
+                self.linear_accel_z_data = []
+                self.altitude_data = []
+                self.pressure_data = []
+                self.Z_axis_G_force_data = []
+                self.temp_data = []
                 
                 # Update plots with empty data
-                self.accel_x_line.setData([], [])
-                self.accel_y_line.setData([], [])
-                self.accel_z_line.setData([], [])
-                self.gyro_x_line.setData([], [])
-                self.gyro_y_line.setData([], [])
-                self.gyro_z_line.setData([], [])
-                self.rssi_line.setData([], [])
-                self.snr_line.setData([], [])
+                self.linear_accel_x_line.setData([], [])
+                self.linear_accel_y_line.setData([], [])
+                self.linear_accel_z_line.setData([], [])
+                self.altitude_line.setData([], [])
+                self.pressure_line.setData([], [])
+                self.Z_axis_G_force_line.setData([], [])
+                self.temp.setData([], [])
                 
                 print("Connection lost. Waiting for data...")
         
         # On first run, set initial timestamp
         if not hasattr(self, 'last_data_time'):
             self.last_data_time = current_time
-                
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+# need to finish converting to Orizaba   
+  
     def update_with_serial_data(self, data):
         """Update dashboard with real data received from serial port"""
         # Extract data values
-        accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z, time_value, state, rssi, snr = data
+        linear_vel_z, altitude, temp, Altitude, Pressure, gyro_z, time_value, state, Z_axis_G_force, snr = data
         
         # Mark as connected and update last data time
         if not self.is_connected:
@@ -603,45 +596,45 @@ class SensorDashboard(QMainWindow):
         self.time_data.append(time_value)
         
         # Add data to lists (instead of numpy roll)
-        self.accel_x_data.append(accel_x)
-        self.accel_y_data.append(accel_y)
-        self.accel_z_data.append(accel_z)
-        self.gyro_x_data.append(gyro_x)
-        self.gyro_y_data.append(gyro_y)
+        self.linear_vel_z_data.append(linear_vel_z)
+        self.altitude_data.append(altitude)
+        self.temp_data.append(temp)
+        self.Altitude_data.append(Altitude)
+        self.pressure_data.append(Pressure)
         self.gyro_z_data.append(gyro_z)
-        self.rssi_data.append(rssi)
+        self.Z_axis_G_force_data.append(Z_axis_G_force)
         self.snr_data.append(snr)
         
         # Trim lists to max_points if they get too long
         if len(self.time_data) > self.max_points:
             self.time_data = self.time_data[-self.max_points:]
-            self.accel_x_data = self.accel_x_data[-self.max_points:]
-            self.accel_y_data = self.accel_y_data[-self.max_points:]
-            self.accel_z_data = self.accel_z_data[-self.max_points:]
-            self.gyro_x_data = self.gyro_x_data[-self.max_points:]
-            self.gyro_y_data = self.gyro_y_data[-self.max_points:]
+            self.linear_vel_z_data = self.linear_vel_z_data[-self.max_points:]
+            self.altitude_data = self.altitude_data[-self.max_points:]
+            self.temp_data = self.temp_data[-self.max_points:]
+            self.Altitude_data = self.Altitude_data[-self.max_points:]
+            self.pressure_data = self.pressure_data[-self.max_points:]
             self.gyro_z_data = self.gyro_z_data[-self.max_points:]
-            self.rssi_data = self.rssi_data[-self.max_points:]
+            self.Z_axis_G_force_data = self.Z_axis_G_force_data[-self.max_points:]
             self.snr_data = self.snr_data[-self.max_points:]
         
         # Update plot data using time_data for x-axis
-        self.accel_x_line.setData(self.time_data, self.accel_x_data)
-        self.accel_y_line.setData(self.time_data, self.accel_y_data)
-        self.accel_z_line.setData(self.time_data, self.accel_z_data)
+        self.linear_vel_z_line.setData(self.time_data, self.linear_vel_z_data)
+        self.altitude_line.setData(self.time_data, self.altitude_data)
+        self.temp_line.setData(self.time_data, self.temp_data)
         
-        self.gyro_x_line.setData(self.time_data, self.gyro_x_data)
-        self.gyro_y_line.setData(self.time_data, self.gyro_y_data)
+        self.altitude_line.setData(self.time_data, self.Altitude_data)
+        self.pressure_line.setData(self.time_data, self.pressure_data)
         self.gyro_z_line.setData(self.time_data, self.gyro_z_data)
         
-        self.rssi_line.setData(self.time_data, self.rssi_data)
+        self.Z_axis_G_force_line.setData(self.time_data, self.Z_axis_G_force_data)
         self.snr_line.setData(self.time_data, self.snr_data)
         
         # Update telemetry display
-        self.accel_x.value_label.setText(str(accel_x))
-        self.accel_y.value_label.setText(str(accel_y))
-        self.accel_z.value_label.setText(str(accel_z))
-        self.gyro_x.value_label.setText(str(gyro_x))
-        self.gyro_y.value_label.setText(str(gyro_y))
+        self.linear_vel_z.value_label.setText(str(linear_vel_z))
+        self.altitude.value_label.setText(str(altitude))
+        self.temp.value_label.setText(str(temp))
+        self.heading.value_label.setText(str(heading))
+        self.Pressure.value_label.setText(str(Pressure))
         self.gyro_z.value_label.setText(str(gyro_z))
         self.time.value_label.setText(str(time_value))
 
