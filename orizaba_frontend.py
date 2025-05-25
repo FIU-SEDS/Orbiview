@@ -20,7 +20,7 @@ app = dash.Dash(__name__, server=server)
 LOGS_DIR = "Flight_Logs"
 
 # Define rocket states
-rocket_states = ["INIT", "Idle", "Boost", "Apogee", "Drogue", "Main", "Landed"]
+rocket_states = ["INIT", "Idle", "Boost", "Burnout", "Coast", "Apogee", "Descent_Drogue", "Descent_Main", "Landed"]
 
 # Last file check time and current file
 last_file_check = 0
@@ -182,9 +182,11 @@ app.layout = html.Div([
         # Text Labels
         html.Div([
             html.Div("LANDED", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
-            html.Div("MAIN", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
-            html.Div("DROGUE", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
+            html.Div("DESCENT_MAIN", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
+            html.Div("DESCENT_DROGUE", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
             html.Div("APOGEE", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
+             html.Div("COAST", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
+             html.Div("BURNOUT", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
             html.Div("BOOST", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
             html.Div("IDLE", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
             html.Div("INIT", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'})
@@ -192,13 +194,13 @@ app.layout = html.Div([
             'position': 'absolute', 'top': '4%', 'left': '10px',
             'height': '80%', 'display': 'flex', 'flex-direction': 'column',
             'justify-content': 'space-between', 'align-items': 'center',
-            'font-size': '12px', 'font-weight': 'bold'
+            'font-size': '8px', 'font-weight': 'bold'
         }),
 
         # Progress Bar (Shifted right)
         html.Div([
             html.Div(id="progress-bar", style={
-                'width': '10px', 'height': '10%', 'background-color': 'white',
+                'width': '8px', 'height': '10%', 'background-color': 'white',
                 'transition': 'height 0.5s ease-in-out'
             })
         ], style={
@@ -243,8 +245,8 @@ app.layout = html.Div([
         html.Div(style={'border-left': '3px solid white', 'height': '70px'}),
             
         html.Div([
-            html.Div("ACCELERATION", style={'color': 'white', 'font-size': '14px'}),
-            html.H3(id='acceleration', style={'color': 'white'})
+            html.Div("VELOCITY(MPH)", style={'color': 'white', 'font-size': '14px'}),
+            html.H3(id='velocity(mph)', style={'color': 'white'})
         ], style={'text-align': 'center', 'padding': '0 20px'})
     ], style={
         'position': 'absolute', 'bottom': '20px', 'left': '60px',
@@ -349,7 +351,7 @@ def update_progress(n):
 
 @app.callback(
     dash.dependencies.Output('altitude', 'children'),
-    dash.dependencies.Output('acceleration', 'children'),
+    dash.dependencies.Output('velocity', 'children'),
     dash.dependencies.Output('mission-time', 'children'),
     [dash.dependencies.Input('interval-component', 'n_intervals')]
 )
@@ -370,7 +372,7 @@ def update_data(n):
     else:
         elapsed_time = "T+ 00:00:00"
     
-    # Format altitude and acceleration
+    # Format altitude and velocity
     altitude_str = f"{altitude:.2f} FT" if altitude is not None else "N/A"
     accel_str = f"{accel_x:.2f} G" if accel_x is not None else "N/A"
     
