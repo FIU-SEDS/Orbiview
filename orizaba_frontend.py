@@ -194,10 +194,11 @@ app.layout = html.Div([
             'position': 'fixed', 'top': '4%', 'left': '10px',
             'height': '80%', 'display': 'flex', 'flex-direction': 'column',
             'justify-content': 'space-between', 'align-items': 'center',
-            'font-size': '8px', 'font-weight': 'bold',  # <-- Added comma here
+            'font-size': '8px', 'font-weight': 'bold',  
             'zIndex': 2,  
             'pointerEvents': 'none'
         }),
+        #MISSING BLUR 
 
         # Progress Bar (Shifted left)
         html.Div([
