@@ -181,23 +181,25 @@ app.layout = html.Div([
     html.Div([
         # Text Labels
         html.Div([
-            html.Div("LANDED", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
-            html.Div("DESCENT_MAIN", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
-            html.Div("DESCENT_DROGUE", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
-            html.Div("APOGEE", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
-             html.Div("COAST", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
-             html.Div("BURNOUT", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
-            html.Div("BOOST", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
-            html.Div("IDLE", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'}),
-            html.Div("INIT", style={'color': 'white', 'writing-mode': 'vertical-rl', 'text-orientation': 'upright'})
+            html.Div("LANDED", style={'color': 'white','text-orientation': 'upright'}),
+            html.Div("DESCENT_MAIN", style={'color': 'white', 'text-orientation': 'upright'}),
+            html.Div("DESCENT_DROGUE", style={'color': 'white','text-orientation': 'upright'}),
+            html.Div("APOGEE", style={'color': 'white', 'text-orientation': 'upright'}),
+             html.Div("COAST", style={'color': 'white','text-orientation': 'upright'}),
+             html.Div("BURNOUT", style={'color': 'white','text-orientation': 'upright'}),
+            html.Div("BOOST", style={'color': 'white','text-orientation': 'upright'}),
+            html.Div("IDLE", style={'color': 'white','text-orientation': 'upright'}),
+            html.Div("INIT", style={'color': 'white','text-orientation': 'upright'})
         ], style={
-            'position': 'absolute', 'top': '4%', 'left': '10px',
+            'position': 'fixed', 'top': '4%', 'left': '10px',
             'height': '80%', 'display': 'flex', 'flex-direction': 'column',
             'justify-content': 'space-between', 'align-items': 'center',
-            'font-size': '8px', 'font-weight': 'bold'
+            'font-size': '8px', 'font-weight': 'bold',  # <-- Added comma here
+            'zIndex': 2,  
+            'pointerEvents': 'none'
         }),
 
-        # Progress Bar (Shifted right)
+        # Progress Bar (Shifted left)
         html.Div([
             html.Div(id="progress-bar", style={
                 'width': '8px', 'height': '10%', 'background-color': 'white',
@@ -208,6 +210,7 @@ app.layout = html.Div([
             'border': '2px solid white',
             'margin-left': '30px'  # Adjusted for spacing
         })
+        
     ], style={
         'position': 'absolute', 'top': '4%', 'left': '10px', 'height': '80%',
         'display': 'flex', 'flex-direction': 'row', 'align-items': 'center'
