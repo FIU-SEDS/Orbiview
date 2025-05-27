@@ -278,29 +278,30 @@ app.layout = html.Div([
             'zIndex': '10'
         }
     ),
-
-    # Gyroscope tilt container
+    
     html.Div([
-        # Horizontal line for 180 degree reference 
-        # Might be modified to be a circle or include degrees 
-        html.Div(
-            style={
-                'position': 'relative',
-                'top': '73%',
-                'left': '625px',
-                'width': '225px',
-                'height': '1px',
-                'borderTop': '4px dotted rgba(255,255,255,0.8)',
-                'zIndex': '10'
-            }
-        ),
+    # Container for centered gyroscope elements
+        html.Div([
+        # Horizontal reference line
+            html.Div(
+                style={
+                    'position': 'absolute',
+                    'bottom': '50px',
+                    'left': '50%',
+                    'transform': 'translateX(-50%)',
+                    'width': '225px',
+                    'height': '1px',
+                    'borderTop': '4px dotted rgba(255,255,255,0.8)',
+                    'zIndex': '10'
+                }
+            ),
         
         # Tilt line (gyroscope)
-        html.Div(
-            id='tilt-line',
-            style={
+            html.Div(
+                id='tilt-line',
+                style={
                 'position': 'absolute',
-                'bottom': '50px',
+                'bottom': '0',
                 'left': '50%',
                 'transform': 'translateX(-50%)',
                 'width': '5px',
@@ -312,13 +313,22 @@ app.layout = html.Div([
             }
         )
     ], style={
-        'position': 'absolute',
+        'position': 'relative',
         'width': '100%',
-        'height': '200px',
-        'bottom': '0',
-        'left': '0'
-    }),
-
+        'height': '150px', 
+        'margin': 'auto'
+    }), 
+    
+], style={
+    'position': 'absolute',
+    'width': '100%',
+    'height': '200px',
+    'bottom': '0',
+    'left': '0',
+    'display': 'flex',
+    'alignItems': 'center',
+    'justifyContent': 'center'
+}), 
     # Logo
     html.Img(src="/assets/seds.png", style={'position': 'absolute', 'top': '10px', 'right': '10px', 'width': '100px', 'opacity': '0.5'}),
 
