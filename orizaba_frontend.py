@@ -208,8 +208,7 @@ app.layout = html.Div([
             })
         ], style={
             'width': '10px', 'height': '100%', 'display': 'flex', 'align-items': 'flex-end',
-            'border': '2px solid white',
-            'margin-left': '30px'  # Adjusted for spacing
+            'border': '2px solid white','margin-left': '30px', 'opacity': '0.25' # Adjusted for spacing
         })
         
     ], style={
