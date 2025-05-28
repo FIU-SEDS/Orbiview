@@ -352,7 +352,7 @@ def update_progress(n):
     
     # Map states to progress percentages
     stage_progress = {
-        7: 100, 6: 84, 5: 70, 4: 56, 3: 42, 2: 28, 1: 17
+        7: 100, 6: 84, 5: 70, 4: 56, 3: 42, 2: 28, 1: 1
     }
     
     progress_height = stage_progress.get(int(state), 17)
