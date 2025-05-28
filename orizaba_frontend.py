@@ -182,8 +182,8 @@ app.layout = html.Div([
         # Text Labels
         html.Div([
             html.Div("LANDED", style={'color': 'white','text-orientation': 'upright'}),
-            html.Div("DESCENT_MAIN", style={'color': 'white', 'text-orientation': 'upright'}),
-            html.Div("DESCENT_DROGUE", style={'color': 'white','text-orientation': 'upright'}),
+            html.Div("MAIN", style={'color': 'white', 'text-orientation': 'upright'}),
+            html.Div("DROGUE", style={'color': 'white','text-orientation': 'upright'}),
             html.Div("APOGEE", style={'color': 'white', 'text-orientation': 'upright'}),
              html.Div("COAST", style={'color': 'white','text-orientation': 'upright'}),
              html.Div("BURNOUT", style={'color': 'white','text-orientation': 'upright'}),
@@ -198,7 +198,7 @@ app.layout = html.Div([
             'zIndex': 2,  
             'pointerEvents': 'none'
         }),
-        
+       
 
         # Progress Bar (Shifted left)
         html.Div([
