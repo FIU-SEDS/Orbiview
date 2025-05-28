@@ -198,7 +198,7 @@ app.layout = html.Div([
             'zIndex': 2,  
             'pointerEvents': 'none'
         }),
-        #MISSING BLUR 
+        
 
         # Progress Bar (Shifted left)
         html.Div([
