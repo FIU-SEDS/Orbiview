@@ -208,11 +208,11 @@ app.layout = html.Div([
             })
         ], style={
             'width': '10px', 'height': '100%', 'display': 'flex', 'align-items': 'flex-end',
-            'border': '2px solid white','margin-left': '30px', 'opacity': '0.25' # Adjusted for spacing
+            'border': '2px solid white','margin-left': '20px', 'opacity': '0.25' # Adjusted for spacing
         })
         
     ], style={
-        'position': 'absolute', 'top': '4%', 'left': '10px', 'height': '80%',
+        'position': 'absolute', 'top': '4%', 'left': '30px', 'height': '80%',
         'display': 'flex', 'flex-direction': 'row', 'align-items': 'center'
     }),
 
@@ -252,7 +252,7 @@ app.layout = html.Div([
             html.H3(id='velocity(mph)', style={'color': 'white'})
         ], style={'text-align': 'center', 'padding': '0 20px'})
     ], style={
-        'position': 'absolute', 'bottom': '20px', 'left': '60px',
+        'position': 'absolute', 'bottom': '20px', 'left': '20px',
         'display': 'flex', 'gap': '50px',
         'padding': '5px 100px', 'border-radius': '10px',
     }),
