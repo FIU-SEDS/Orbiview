@@ -20,12 +20,16 @@ app = dash.Dash(__name__, server=server)
 LOGS_DIR = "Flight_Logs"
 
 # Define rocket states
-rocket_states = ["INIT", "Idle", "Boost", "Burnout", "Coast", "Apogee", "Descent_Drogue", "Descent_Main", "Landed"]
+rocket_states = ["INIT", "Idle", "Boost", "Burnout", "Coast", "Apogee", "Drogue", "Main", "Landed"]
 
 # Last file check time and current file
 last_file_check = 0
 current_file = None
 last_read_line = 0
+
+ #-----------------------------------------------------------
+#FIX PARSING FOR FRONT END AS WELL
+
 
 # Function to find the most recent CSV file in the logs directory
 def find_latest_csv():
@@ -109,6 +113,8 @@ def read_latest_data():
         print(f"Error reading CSV: {e}")
         return None, None, None, None, None, None, None, None, None, None
 
+
+ #-----------------------------------------------------------
 def generate_frames():
     while True:
         camera = cv2.VideoCapture(0)  # Use the first webcam

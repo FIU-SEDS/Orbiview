@@ -11,6 +11,7 @@ from PyQt6.QtGui import QFont, QColor
 import pyqtgraph as pg
 import os
 from serial.tools import list_ports
+import struct
 
 class PortSelectionDialog(QDialog):
     """Dialog for selecting a serial port"""
@@ -202,33 +203,25 @@ class SerialThread(QThread):
                 if ser.in_waiting:
                     line = ser.readline().decode('utf-8').strip()  # Read and decode serial data
                     if "+RCV=" in line:
-                        clean_data = line.replace("+RCV=", "")  # FOR OLD CODE IT IS Received: Recieved+RCV=
-                        data_values = clean_data.split(',')
+                        #How to convert b_arr to data
+                          packetID = struct.pack(size_t, data
+                          )
+                          
+                                
                         
-                        # Parse data values
-                        if len(data_values) >= 12:  # Ensure we have all expected values
-                            acceleration_x = int(data_values[2])
-                            acceleration_y = int(data_values[3])
-                            acceleration_z = int(data_values[4])
-                            Altitude = int(data_values[5])
-                            Pressure = int(data_values[6])
-                            time_elapsed = int(data_values[7])
-                            rocket_state = data_values[8]
-                            Z_axis_G_force = int(data_values[9])
-                            Temperature = float(data_values[10])
                             
                             # Save to CSV
                             with open(self.output_csv, mode='a', newline='') as csvfile:
                                 writer = csv.writer(csvfile)
                                 writer.writerow([
-                                    acceleration_x, acceleration_y, acceleration_z,
-                                    Altitude, Pressure, time_elapsed, rocket_state, Z_axis_G_force, Temperature,
+                                    linear_acceleration_x, linear_acceleration_y, linear_acceleration_z,
+                                    Altitude, Pressure, gyro_z, time_elapsed, Z_axis_G_force, Temperature,
                                 ])
                             
                             # Emit signal with parsed data
                             self.data_received.emit([
-                                acceleration_x, acceleration_y, acceleration_z,
-                                Altitude, Pressure, time_elapsed, rocket_state, Z_axis_G_force, Temperature
+                                linear_acceleration_x, linear_acceleration_y, linear_acceleration_z,
+                                Altitude, Pressure, gyro_z, time_elapsed, Z_axis_G_force, Temperature
                             ])
                 
                 time.sleep(0.05)  # Small delay to prevent CPU hogging
@@ -502,9 +495,9 @@ class SensorDashboard(QMainWindow):
 
         # Set y-axis ranges, FIND CORRECT X & Y
         self.linear_accel_graph.plot_widget.setYRange(0, 1500)
-        self.barometer_graph.plot_widget.setYRange(-150000, 150000)
-        self.Z_axis_G_force_graph.plot_widget.setYRange(-50, 0)
-        self.temp_graph.plot_widget.setYRange(0, 12)
+        self.barometer_graph.plot_widget.setYRange(, 150000)
+        self.Z_axis_G_force_graph.plot_widget.setYRange(0, 20)
+        self.temp_graph.plot_widget.setYRange(, 12)
         
 
         # Set initial connection state
@@ -513,7 +506,7 @@ class SensorDashboard(QMainWindow):
         
         # Create legends
         self.create_legend(self.linear_accel_graph, ["linear_acc_x", "linear_acc_y", "linear_acc_z"])
-        self.create_legend(self.barometer_graph, ["Altitude", "Pressure"])
+        self.create_legend(self.barometer_graph, ["Altitude"])
     
     def create_legend(self, graph_panel, items):
         legend = pg.LegendItem(offset=(70, 30))
@@ -525,7 +518,6 @@ class SensorDashboard(QMainWindow):
             legend.addItem(self.temp_line, "linear_acceleration_z")
         elif "Altitude" in items:
             legend.addItem(self.altitude_line, "Altitude")
-            legend.addItem(self.pressure_line, "Pressure")
     
     def setup_timers(self):
         # Create a timer to check connection status
@@ -583,7 +575,7 @@ class SensorDashboard(QMainWindow):
     def update_with_serial_data(self, data):
         """Update dashboard with real data received from serial port"""
         # Extract data values
-        linear_vel_z, altitude, temp, Altitude, Pressure, gyro_z, time_value, state, Z_axis_G_force, snr = data
+        linear_vel_z, altitude, temp, Altitude, Pressure, gyro_z, time_value, state, Z_axis_G_force
         
         # Mark as connected and update last data time
         if not self.is_connected:
@@ -603,7 +595,6 @@ class SensorDashboard(QMainWindow):
         self.pressure_data.append(Pressure)
         self.gyro_z_data.append(gyro_z)
         self.Z_axis_G_force_data.append(Z_axis_G_force)
-        self.snr_data.append(snr)
         
         # Trim lists to max_points if they get too long
         if len(self.time_data) > self.max_points:
@@ -615,19 +606,18 @@ class SensorDashboard(QMainWindow):
             self.pressure_data = self.pressure_data[-self.max_points:]
             self.gyro_z_data = self.gyro_z_data[-self.max_points:]
             self.Z_axis_G_force_data = self.Z_axis_G_force_data[-self.max_points:]
-            self.snr_data = self.snr_data[-self.max_points:]
         
         # Update plot data using time_data for x-axis
-        self.linear_vel_z_line.setData(self.time_data, self.linear_vel_z_data)
-        self.altitude_line.setData(self.time_data, self.altitude_data)
-        self.temp_line.setData(self.time_data, self.temp_data)
+        self.linear_accel_x_line.setData(self.time_data, self.linear_accel_x_data)
+        self.linear_accel_y_line.setData(self.time_data, self.linear_accel_y_data)
+        self.linear_accel_z_line.setData(self.time_data, self.linear_accel_z_data)
         
         self.altitude_line.setData(self.time_data, self.Altitude_data)
         self.pressure_line.setData(self.time_data, self.pressure_data)
         self.gyro_z_line.setData(self.time_data, self.gyro_z_data)
         
         self.Z_axis_G_force_line.setData(self.time_data, self.Z_axis_G_force_data)
-        self.snr_line.setData(self.time_data, self.snr_data)
+        
         
         # Update telemetry display
         self.linear_vel_z.value_label.setText(str(linear_vel_z))
@@ -646,12 +636,16 @@ class SensorDashboard(QMainWindow):
         elif(state == "3"):
             self.state.value_label.setText("BOOST")
         elif(state == "4"):
-            self.state.value_label.setText("APOGEE")
+            self.state.value_label.setText("BURNOUT")
         elif(state == "5"):
-            self.state.value_label.setText("DROGUE")
-        elif(state == "6"):
-            self.state.value_label.setText("MAIN")
+            self.state.value_label.setText("COAST")
+        elif (state == "6"):
+            self.state.value_label.setText("APOGEE")
         elif(state == "7"):
+            self.state.value_label.setText("DROGUE")
+        elif(state == "8"):
+            self.state.value_label.setText("MAIN")
+        elif(state == "9"):
             self.state.value_label.setText("LAND")
 
         # Update ON/OFF label
