@@ -198,18 +198,54 @@ class SerialThread(QThread):
                     time.sleep(reconnect_delay)
                     continue
             
+
+            #packet parsing
+            def parse_packet(data_bytes):
+                packet_id = data_bytes[0]
+
+                if packet_id == 0:  # BAROMETER
+                    pressure, altitude = struct.unpack_from('ff', data_bytes, offset=1)
+                    print(f"[Barometer] Pressure: {pressure:.2f} Pa, Altitude: {altitude:.2f} ft")
+
+                elif packet_id == 1:  # IMUS
+                    acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z = struct.unpack_from('ffffff', data_bytes, offset=1)
+                    print(f"[IMU] Accel -> X: {acc_x:.2f}, Y: {acc_y:.2f}, Z: {acc_z:.2f}")
+                     print(f"     Gyro  -> X: {gyro_x:.2f}, Y: {gyro_y:.2f}, Z: {gyro_z:.2f}")
+
+                 elif packet_id == 2:  # MAGNETOMETER
+                    mag_x, mag_y, mag_z = struct.unpack_from('fff', data_bytes, offset=1)
+                    print(f"[Magnetometer] X: {mag_x:.2f}, Y: {mag_y:.2f}, Z: {mag_z:.2f}")
+
+                elif packet_id == 3:  # TEMP_AND_HUMID
+                    temp, humid = struct.unpack_from('ff', data_bytes, offset=1)
+                    print(f"[Temp/Humidity] Temp: {temp:.2f}°C, Humidity: {humid:.2f}%")
+
+                elif packet_id == 4:  # GPS
+                    lat, lon, alt = struct.unpack_from('fff', data_bytes, offset=1)
+                    print(f"[GPS] Latitude: {lat:.6f}, Longitude: {lon:.6f}, Altitude: {alt:.2f}")
+ #-----------------------MISSING POSSIBLE ERROR CHECK--------------------------------------- 
+
+
+     #Verify if floats print seperately e.g. TEMP_AND_HUMID prints temp: THEN humid: 
+
             # Read data if connected
             try:
                 if ser.in_waiting:
                     line = ser.readline().decode('utf-8').strip()  # Read and decode serial data
                     if "+RCV=" in line:
-                        #How to convert b_arr to data
-                          packetID = struct.pack(size_t, data
-                          )     
+                       parts = line.split(',') 
+                       if len(parts) >= 3:
+                        b64_data = parts[2]
+                        try:
+                            raw_data = base64.decoded_bytes(b64_data)
+                            parse_packet(raw_data)
+                            #Possible error check 
+                        except Exception as e:
+                            print(f"[Decode Error] {e}")
+            except Exception as e:
+                print(f"[Serial Error] {e}")
                           
-                                
-                        
-                            
+                          
                             # Save to CSV
                             with open(self.output_csv, mode='a', newline='') as csvfile:
                                 writer = csv.writer(csvfile)
