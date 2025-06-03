@@ -205,7 +205,7 @@ class SerialThread(QThread):
                     if "+RCV=" in line:
                         #How to convert b_arr to data
                           packetID = struct.pack(size_t, data
-                          )
+                          )     
                           
                                 
                         
@@ -493,11 +493,11 @@ class SensorDashboard(QMainWindow):
         )
         
 
-        # Set y-axis ranges, FIND CORRECT X & Y
-        self.linear_accel_graph.plot_widget.setYRange(0, 1500)
-        self.barometer_graph.plot_widget.setYRange(, 150000)
-        self.Z_axis_G_force_graph.plot_widget.setYRange(0, 20)
-        self.temp_graph.plot_widget.setYRange(, 12)
+        # Set y-axis ranges
+        self.linear_accel_graph.plot_widget.setYRange(-30, 200) #m/s^2
+        self.barometer_graph.plot_widget.setYRange(0, 12000) #ft
+        self.Z_axis_G_force_graph.plot_widget.setYRange(0, 18) 
+        self.temp_graph.plot_widget.setYRange(-10, 60) #degrees celcius
         
 
         # Set initial connection state
