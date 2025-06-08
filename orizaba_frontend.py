@@ -247,14 +247,14 @@ app.layout = html.Div([
     # Bottom telemetry data
     html.Div([
         html.Div([
-            html.Div("ALTITUDE", style={'color': 'white', 'font-size': '14px'}),
+            html.Div("ALTITUDE (FEET)", style={'color': 'white', 'font-size': '14px'}),
             html.H3(id='altitude', style={'color': 'white'})
         ], style={'text-align': 'center', 'padding': '0 20px'}),
 
         html.Div(style={'border-left': '3px solid white', 'height': '70px'}),
             
         html.Div([
-            html.Div("VELOCITY(MPH)", style={'color': 'white', 'font-size': '14px'}),
+            html.Div("VELOCITY (MPH)", style={'color': 'white', 'font-size': '14px'}),
             html.H3(id='velocity(mph)', style={'color': 'white'})
         ], style={'text-align': 'center', 'padding': '0 20px'})
     ], style={
