@@ -53,9 +53,9 @@ def process_serial_line(line):
     print(f"[Input] Processing line: {line}")
     
     try:
-        if "RCV+=" in line:
+        if "+RCV=" in line:
             # Remove the RCV+= prefix and split by commas
-            data_part = line.replace("RCV+=", "")
+            data_part = line.replace("+RCV=", "")
             parts = data_part.split(',')
             print(f"[Debug] Split into {len(parts)} parts: {parts}")
             
@@ -89,7 +89,7 @@ def process_serial_line(line):
                     
                     # Parse the packet
                     parsed_data = parse_packet(raw_data)
-                    
+                   
                     if parsed_data:
                         # Add the metadata
                         parsed_data['address'] = address
