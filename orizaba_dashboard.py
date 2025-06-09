@@ -3,6 +3,8 @@ import numpy as np
 import csv
 import serial
 import time
+import base64
+import struct
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                             QHBoxLayout, QLabel, QGridLayout, QComboBox, QPushButton,
                             QDialog, QDialogButtonBox)
@@ -12,6 +14,237 @@ import pyqtgraph as pg
 import os
 from serial.tools import list_ports
 
+
+#==========PACKET PARSING FUNCTION============
+def parse_packets(data_bytes):
+    """Parse binary packet data: variable-length sensors based on sensor ID"""
+    if len(data_bytes) < 1:
+        print(f"[Error] Packet too short: {len(data_bytes)} bytes")
+        return None
+        
+    print(f"[Debug] Total data length: {len(data_bytes)} bytes")
+    
+    # Define sensor configurations: ID -> (name, num_floats, field_names)
+    sensor_configs = {
+        0: ("Barometer", 2, ["altitude", "pressure"]),
+        1: ("IMU", 8, ["tilt_angle", "g_force_z", "linear_accel_x", "linear_accel_y", 
+                      "linear_accel_z", "linear_velo_x", "linear_velo_y", "linear_velo_z"]),
+        2: ("Magnetometer", 1, ["heading"]),
+        3: ("Real_Time_Clock", 0, []),  # Not specified yet
+        4: ("Temp_Humid", 2, ["humidity", "temperature"]),
+        5: ("GPS", 2, ["latitude", "longitude"]),
+        6: ("Time", 0, [])  # Not specified yet
+    }
+    
+    sensors = []
+    offset = 0
+    sensor_count = 0
+    
+    while offset < len(data_bytes):
+        if offset >= len(data_bytes):
+            break
+            
+        sensor_id = data_bytes[offset]
+        sensor_count += 1
+        offset += 1
+        
+        if sensor_id not in sensor_configs:
+            print(f"[Error] Unknown sensor ID: {sensor_id}")
+            return None
+        
+        sensor_name, num_floats, field_names = sensor_configs[sensor_id]
+        expected_bytes = num_floats * 4  # 4 bytes per float
+        
+        if offset + expected_bytes > len(data_bytes):
+            print(f"[Error] Not enough data for {sensor_name}: need {expected_bytes} bytes, have {len(data_bytes) - offset}")
+            return None
+        
+        print(f"[Sensor {sensor_count}] {sensor_name} (ID: {sensor_id}) - reading {num_floats} float(s)")
+        
+        try:
+            # Read the floats for this sensor
+            float_values = []
+            sensor_data = {'sensor_id': sensor_id, 'sensor_name': sensor_name}
+            
+            for i in range(num_floats):
+                float_value = struct.unpack_from('f', data_bytes, offset=offset)[0]
+                float_values.append(float_value)
+                
+                # Add named field
+                if i < len(field_names):
+                    field_name = field_names[i]
+                    sensor_data[field_name] = float_value
+                    print(f"  {field_name}: {float_value:.6f}")
+                else:
+                    print(f"  value_{i}: {float_value:.6f}")
+                
+                offset += 4
+            
+            sensor_data['values'] = float_values
+            sensor_data['num_values'] = num_floats
+            sensors.append(sensor_data)
+                
+        except struct.error as e:
+            print(f"[Struct Error] Failed to unpack {sensor_name}: {e}")
+            return None
+    
+    print(f"[Debug] Successfully parsed {len(sensors)} sensor(s)")
+    return sensors
+
+def process_serial_line(line):
+    """Process a single line from serial input in format: +RCV=[address],[length],[data],[rssi],[snr]"""
+    print(f"[Input] Processing line: {line}")
+    
+    try:
+        if "+RCV=" in line:
+            # Remove the RCV+= prefix and split by commas
+            data_part = line.replace("+RCV=", "")
+            parts = data_part.split(',')
+            print(f"[Debug] Split into {len(parts)} parts: {parts}")
+            
+            if len(parts) >= 5:
+                address = parts[0].strip()
+                length = parts[1].strip()
+                b64_data = parts[2].strip()  # The Base64 encoded data
+                rssi = parts[3].strip()
+                snr = parts[4].strip()
+                
+                print(f"[Debug] Address: {address}")
+                print(f"[Debug] Reported Length: {length}")
+                print(f"[Debug] RSSI: {rssi}")
+                print(f"[Debug] SNR: {snr}")
+                print(f"[Debug] Base64 data: '{b64_data}'")
+                
+                try:
+                    # Decode Base64 to binary data
+                    raw_data = base64.b64decode(b64_data)
+                    actual_length = len(raw_data)
+                    print(f"[Debug] Actual decoded length: {actual_length} bytes")
+                    print(f"[Debug] Raw bytes: {[hex(b) for b in raw_data]}")
+                    
+                    # Check if reported length matches actual length
+                    try:
+                        reported_length_int = int(length)
+                        if reported_length_int != actual_length:
+                            print(f"[Warning] Length mismatch! Reported: {reported_length_int}, Actual: {actual_length}")
+                    except ValueError:
+                        print(f"[Warning] Could not parse reported length: '{length}'")
+                    
+                    # Parse the packets (could be multiple sensors)
+                    parsed_sensors = parse_packets(raw_data)
+                    
+                    if parsed_sensors:
+                        # Add metadata to the result
+                        parsed_data = {
+                            'sensors': parsed_sensors,
+                            'address': address,
+                            'reported_length': length,
+                            'actual_length': actual_length,
+                            'rssi': rssi,
+                            'snr': snr,
+                            'num_sensors': len(parsed_sensors)
+                        }
+                        return parsed_data
+                    else:
+                        return None
+                    
+                    return parsed_data
+                    
+                except Exception as e:
+                    print(f"[Decode Error] {e}")
+                    return None
+            else:
+                print(f"[Error] Invalid RCV format, expected 5 parts, got {len(parts)}")
+                return None
+        else:
+            print("[Error] Line doesn't contain 'RCV+='")
+            return None
+    except Exception as e:
+        print(f"[Serial Error] {e}")
+        return None
+
+def convert_parsed_data_to_dash_format(parsed_data):
+    """Convert parsed sensor data to the format expected by dashboard"""
+    #Making sure correct data is being obtained
+    if not parsed_data or 'sensors' not in parsed_data:
+        return None
+    
+    #initializing default data values
+    dashboard_data = {
+        'tilt_angle': 0.0,
+        'z_axis_g_force': 0.0,
+        'linear_accel_x': 0.0,
+        'linear_accel_y': 0.0,
+        'linear_accel_z': 0.0,
+        'linear_velocity_x': 0.0,
+        'linear_velocity_y': 0.0,
+        'linear_velocity_z': 0.0,
+        'altitude': 0.0,
+        'pressure': 0.0,
+        'heading': 0.0,
+        'temperature': 0.0,
+        'humidity': 0.0,
+        'longitude': 0.0,
+        'latitude': 0.0,
+        'time_elapsed': int(time.time()),  # Use current time as fallback
+        'rocket_state': "UNKNOWN"
+
+    }
+
+        #extracting data from each sensor
+    for senor in parsed_data['sensors']:
+        sensor_name = sensor['sensor_name']  
+
+        if sensor_name == 'IMU':
+            dashboard_data['tilt_angle'] = sensor.get('tilt-angle', 0.0)
+            dashboard_data['z_axis_g_force'] = sensor.get('g_force_z', 0.0)
+            dashboard_data['linear_accel_x'] = sensor.get('linear_accel_x', 0.0)
+            dashboard_data['linear_accel_y'] = sensor.get('linear_accel_y', 0.0)
+            dashboard_data['linear_accel_z'] = sensor.get('linear_accel_z', 0.0)
+            dashboard_data['linear_velocity_x'] = sensor.get('linear_velo_x', 0.0)
+            dashboard_data['linear_velocity_y'] = sensor.get('linear_velo_y', 0.0)
+            dashboard_data['linear_velocity_z'] = sensor.get('linear_velo_z', 0.0)
+
+        elif sensor_name == "Barometer": 
+            dashboard_data['altitude'] = sensor.get('altitude', 0.0)
+            dashboard_data['pressure'] = sensor.get('pressure', 0.0)
+
+        elif sensor_name == "Magnetometer":
+            dashboard_data['heading'] = sensor.get('heading', 0.0)
+            
+        elif sensor_name == "Temp_Humid":
+            dashboard_data['temperature'] = sensor.get('temperature', 0.0) 
+            dashboard_data['humidity'] = sensor.get('humidity', 0.0)
+
+        elif sensor_name == "GPS":
+            dashboard_data['latitude'] = sensor.get('latitude', 0.0)
+            dashboard_data['longitude'] = sensor.get('longitude', 0.0)
+
+    #converting to list-like format expected by dashboard
+
+    return [
+
+        dashboard_data['tilt_angle'],
+        dashboard_data['z_axis_g_force'],
+        dashboard_data['linear_accel_x'],
+        dashboard_data['linear_accel_y'],
+        dashboard_data['linear_accel_z'],
+        dashboard_data['linear_velocity_x'],
+        dashboard_data['linear_velocity_y'],
+        dashboard_data['linear_velocity_z'],
+        dashboard_data['altitude'],
+        dashboard_data['pressure'],
+        dashboard_data['heading'],
+        dashboard_data['temperature'],
+        dashboard_data['humidity'],
+        dashboard_data['longitude'],
+        dashboard_data['latitude'],
+        dashboard_data['time_elapsed'],
+        dashboard_data['rocket_state']
+
+    ]
+
+#===============GUI Classes==========================
 class PortSelectionDialog(QDialog):
     """Dialog for selecting a serial port"""
     def __init__(self, parent=None):
@@ -56,7 +289,7 @@ class PortSelectionDialog(QDialog):
         layout = QVBoxLayout()
         
         # Label
-        self.label = QLabel("Reciever Serial Port:")
+        self.label = QLabel("Receiver Serial Port:")
         self.label.setFont(QFont("Arial", 11))
         layout.addWidget(self.label)
         
@@ -200,47 +433,24 @@ class SerialThread(QThread):
             try:
                 if ser.in_waiting:
                     line = ser.readline().decode('utf-8').strip()  # Read and decode serial data
-                    if "+RCV=" in line:
-                        clean_data = line.replace("+RCV=", "")  # FOR OLD CODE IT IS Received: Recieved+RCV=
-                        data_values = clean_data.split(',')
-                        
-                        # Parse new data values - expecting 17 values now
-                        if len(data_values) >= 17:  # Updated for new data structure
-                            tilt_angle = float(data_values[0])
-                            z_axis_g_force = float(data_values[1])
-                            linear_accel_x = float(data_values[2])
-                            linear_accel_y = float(data_values[3])
-                            linear_accel_z = float(data_values[4])
-                            linear_velocity_x = float(data_values[5])
-                            linear_velocity_y = float(data_values[6])
-                            linear_velocity_z = float(data_values[7])
-                            altitude = float(data_values[8])
-                            pressure = float(data_values[9])
-                            heading = float(data_values[10])
-                            temperature = float(data_values[11])
-                            humidity = float(data_values[12])
-                            longitude = float(data_values[13])
-                            latitude = float(data_values[14])
-                            time_elapsed = int(data_values[15])
-                            rocket_state = data_values[16]
-                            
-                            # Save to CSV
-                            with open(self.output_csv, mode='a', newline='') as csvfile:
-                                writer = csv.writer(csvfile)
-                                writer.writerow([
-                                    tilt_angle, z_axis_g_force, linear_accel_x, linear_accel_y, linear_accel_z,
-                                    linear_velocity_x, linear_velocity_y, linear_velocity_z,
-                                    altitude, pressure, heading, temperature, humidity,
-                                    longitude, latitude, time_elapsed, rocket_state
-                                ])
-                            
-                            # Emit signal with parsed data
-                            self.data_received.emit([
-                                tilt_angle, z_axis_g_force, linear_accel_x, linear_accel_y, linear_accel_z,
-                                linear_velocity_x, linear_velocity_y, linear_velocity_z,
-                                altitude, pressure, heading, temperature, humidity,
-                                longitude, latitude, time_elapsed, rocket_state
-                            ])
+
+                    print(f"Raw serial line: {line}") 
+
+                    #   parsing as data packet
+                    parsed_result = process_serial_line(line)
+                    if parsed_result:
+                            print("Succesfully parsed packet data!")
+                            #converting parsed data into dashboard format
+                            dashboard_data = convert_parsed_data_to_dash_format(parsed_result)
+                            if dashboard_data:
+                                # Save to CSV
+                                with open(self.output_csv, mode='a', newline='') as csvfile:
+                                    writer = csv.writer(csvfile)
+                                    writer.writerow(dashboard_data)
+                                
+                                # Emit signal with parsed data
+                                self.data_received.emit(dashboard_data)
+                            continue
                 
                 time.sleep(0.05)  # Small delay to prevent CPU hogging
                 
@@ -641,7 +851,7 @@ class SensorDashboard(QMainWindow):
         self.latitude.value_label.setText(f"{latitude:.6f}")
         self.time.value_label.setText(str(time_value))
 
-        # Update state display
+    
          # Update state display
         if(state == "1"):
             self.state.value_label.setText("INIT")
