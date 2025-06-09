@@ -9,15 +9,28 @@ def parse_packets(data_bytes):
         
     print(f"[Debug] Total data length: {len(data_bytes)} bytes")
     
-    # Define sensor configurations: ID -> (name, num_floats, field_names)
+    # Define sensor configurations: ID -> (name, data_config, field_names)
     sensor_configs = {
         0: ("Barometer", 2, ["altitude", "pressure"]),
         1: ("IMU", 8, ["tilt_angle", "g_force_z", "linear_accel_x", "linear_accel_y", 
                       "linear_accel_z", "linear_velo_x", "linear_velo_y", "linear_velo_z"]),
         2: ("Magnetometer", 1, ["heading"]),
-        3: ("Temp_Humud", 2, ["humidity", "temperature"]),  # Not specified yet
+        3: ("Temp_Humid", 2, ["humidity", "temperature"]),
         4: ("Real_Time_Clock", 0, []),
-        5: ("Time", 0, [])  # Not specified yet
+        5: ("Rocket_State", "byte", ["state"]),  # Special case: 1 byte instead of floats
+        6: ("Time", 0, [])
+    }
+    
+    # Rocket state mapping
+    rocket_states = {
+        1: "IDLE",
+        2: "BOOST", 
+        3: "BURNOUT",
+        4: "COAST",
+        5: "APOGEE",
+        6: "DESCENT_DROGUE",
+        7: "DESCENT_MAIN",
+        8: "LANDED"
     }
     
     sensors = []
@@ -36,7 +49,36 @@ def parse_packets(data_bytes):
             print(f"[Error] Unknown sensor ID: {sensor_id}")
             return None
         
-        sensor_name, num_floats, field_names = sensor_configs[sensor_id]
+        sensor_name, data_config, field_names = sensor_configs[sensor_id]
+        
+        # Handle special case for rocket state (1 byte)
+        if data_config == "byte":
+            if offset >= len(data_bytes):
+                print(f"[Error] Not enough data for {sensor_name}: need 1 byte")
+                return None
+            
+            state_byte = data_bytes[offset]
+            offset += 1
+            
+            state_name = rocket_states.get(state_byte, f"UNKNOWN_STATE_{state_byte}")
+            
+            print(f"[Sensor {sensor_count}] {sensor_name} (ID: {sensor_id}) - reading 1 byte")
+            print(f"  state: {state_byte} ({state_name})")
+            
+            sensor_data = {
+                'sensor_id': sensor_id,
+                'sensor_name': sensor_name,
+                'state': state_byte,
+                'state_name': state_name,
+                'num_values': 1,
+                'values': [state_byte]
+            }
+            
+            sensors.append(sensor_data)
+            continue
+        
+        # Handle normal float sensors
+        num_floats = data_config
         expected_bytes = num_floats * 4  # 4 bytes per float
         
         if offset + expected_bytes > len(data_bytes):
@@ -81,7 +123,7 @@ def process_serial_line(line):
     
     try:
         if "+RCV=" in line:
-            # Remove the RCV+= prefix and split by commas
+            # Remove the +RCV= prefix and split by commas
             data_part = line.replace("+RCV=", "")
             parts = data_part.split(',')
             print(f"[Debug] Split into {len(parts)} parts: {parts}")
@@ -132,16 +174,14 @@ def process_serial_line(line):
                     else:
                         return None
                     
-                    return parsed_data
-                    
                 except Exception as e:
                     print(f"[Decode Error] {e}")
                     return None
             else:
-                print(f"[Error] Invalid RCV format, expected 5 parts, got {len(parts)}")
+                print(f"[Error] Invalid +RCV format, expected 5 parts, got {len(parts)}")
                 return None
         else:
-            print("[Error] Line doesn't contain 'RCV+='")
+            print("[Error] Line doesn't contain '+RCV='")
             return None
     except Exception as e:
         print(f"[Serial Error] {e}")
@@ -172,14 +212,25 @@ def interactive_test():
     print("=" * 60)
     print("INTERACTIVE BASE64 SENSOR PACKET PARSER")
     print("=" * 60)
-    print("Format: RCV+=[address],[length],[data],[rssi],[snr]")
+    print("Format: +RCV=[address],[length],[data],[rssi],[snr]")
     print("Enter 'quit' to exit")
     print("Enter 'b64:yourbase64string' to decode just Base64 data")
+    print("=" * 60)
+    print("SENSOR IDs:")
+    print("  0 = Barometer (2 floats: altitude, pressure)")
+    print("  1 = IMU (8 floats: tilt_angle, g_force_z, linear_accel_x, linear_accel_y,")
+    print("           linear_accel_z, linear_velo_x, linear_velo_y, linear_velo_z)")
+    print("  2 = Magnetometer (1 float: heading)")
+    print("  3 = Temp_Humid (2 floats: humidity, temperature)")
+    print("  4 = Real_Time_Clock (0 floats)")
+    print("  5 = Rocket_State (1 byte: 1=IDLE, 2=BOOST, 3=BURNOUT, 4=COAST,")
+    print("                           5=APOGEE, 6=DESCENT_DROGUE, 7=DESCENT_MAIN, 8=LANDED)")
+    print("  6 = Time (0 floats)")
     print("=" * 60)
     
     while True:
         try:
-            user_input = input("\nEnter RCV line: ").strip()
+            user_input = input("\nEnter +RCV line: ").strip()
             
             if user_input.lower() == 'quit':
                 break
@@ -191,7 +242,7 @@ def interactive_test():
                 continue
                 
             if not user_input:
-                print("Please enter a valid RCV line or 'quit'")
+                print("Please enter a valid +RCV line or 'quit'")
                 continue
             
             print("\n" + "-" * 50)
@@ -209,8 +260,11 @@ def interactive_test():
                 for i, sensor in enumerate(result['sensors']):
                     print(f"    {i+1}. {sensor['sensor_name']} (ID: {sensor['sensor_id']}):")
                     
+                    # Special handling for rocket state
+                    if sensor['sensor_name'] == 'Rocket_State':
+                        print(f"       state: {sensor['state']} ({sensor['state_name']})")
                     # Print individual fields if they exist
-                    if sensor['num_values'] > 0:
+                    elif sensor['num_values'] > 0:
                         for key, value in sensor.items():
                             if key not in ['sensor_id', 'sensor_name', 'values', 'num_values'] and isinstance(value, (int, float)):
                                 print(f"       {key}: {value:.6f}")
