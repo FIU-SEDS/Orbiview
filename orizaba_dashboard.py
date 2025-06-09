@@ -192,7 +192,7 @@ def convert_parsed_data_to_dash_format(parsed_data):
     }
 
         #extracting data from each sensor
-    for senor in parsed_data['sensors']:
+    for sensor in parsed_data['sensors']:
         sensor_name = sensor['sensor_name']  
 
         if sensor_name == 'IMU':
