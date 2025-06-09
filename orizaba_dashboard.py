@@ -336,7 +336,7 @@ class SensorDashboard(QMainWindow):
         
         # Create the four graph panels with new titles
         self.linear_accel_graph = self.create_graph_panel("Linear Acceleration")
-        self.barometer_graph = self.create_graph_panel("Barometer")
+        self.barometer_graph = self.create_graph_panel("Altitude")
         self.z_gforce_graph = self.create_graph_panel("Z-Axis G-Force")
         self.temperature_graph = self.create_graph_panel("Temperature")
         
@@ -514,10 +514,10 @@ class SensorDashboard(QMainWindow):
         )
         
         # Set y-axis ranges for new graphs
-        self.linear_accel_graph.plot_widget.setYRange(-50, 50)
-        self.barometer_graph.plot_widget.setYRange(0, 5000)  # Altitude range
-        self.z_gforce_graph.plot_widget.setYRange(-10, 10)   # G-force range
-        self.temperature_graph.plot_widget.setYRange(-20, 80)  # Temperature range
+        self.linear_accel_graph.plot_widget.setYRange(-30, 200)
+        self.barometer_graph.plot_widget.setYRange(0, 12000)  # Altitude range
+        self.z_gforce_graph.plot_widget.setYRange(0, 18)   # G-force range
+        self.temperature_graph.plot_widget.setYRange(-10, 60)  # Temperature range
         
         # Set initial connection state
         self.is_connected = False
@@ -671,3 +671,12 @@ class SensorDashboard(QMainWindow):
         print("Shutting down...")
         if hasattr(self, 'serial_thread'):
             self.serial_thread.stop()
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    
+    # Create main window without specifying port initially
+    window = SensorDashboard()
+    window.show()
+    
+    sys.exit(app.exec())   
