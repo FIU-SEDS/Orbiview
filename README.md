@@ -9,7 +9,7 @@ Orbview is a minimalist dashboard system designed to provide real-time data visu
 
 
 ### Livestream (Public View)
-![Latest version of hud](assets/orizaba_livesream)
+![Latest version of hud](assets/orizaba_livestream.png)
 
 ## To Run
 
