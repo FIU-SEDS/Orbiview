@@ -671,3 +671,21 @@ class SensorDashboard(QMainWindow):
         print("Shutting down...")
         if hasattr(self, 'serial_thread'):
             self.serial_thread.stop()
+
+
+# Main execution block 
+if __name__ == "__main__":
+    try:
+        # Create QApplication instance
+        app = QApplication(sys.argv)
+        
+        # Create and show the main window
+        dashboard = SensorDashboard()
+        dashboard.show()
+        
+        # Start the application event loop
+        sys.exit(app.exec())
+        
+    except Exception as e:
+        print(f"Error starting application: {e}")
+        sys.exit(1)

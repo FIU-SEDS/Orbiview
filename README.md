@@ -4,13 +4,17 @@ Orbview is a minimalist dashboard system designed to provide real-time data visu
 
 ## UI Design:
 
-![Version 1 of the EXE file running](dash.png)
-![Latest version of hud](hud.png)
+### Dashboard (Technical Team View Only)
+![Version 2.0 of dashboard](assets/dash.png)
+
+
+### Livestream (Public View)
+![Latest version of hud](assets/orizaba_livesream)
 
 ## To Run
 
 ```bash
-python sensor_dashboard.py
+python orizaba_dashboard.py
 ```
 
 ## Make EXE file
