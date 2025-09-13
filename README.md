@@ -17,25 +17,24 @@ Orbview is a minimalist dashboard system designed to provide real-time data visu
 python orizaba_dashboard.py
 ```
 
-## Make EXE file
-
-```bash
-python -m PyInstaller --onefile --windowed --icon=dashboard_icon.ico sensor_dashboard.py
-```
-
 ## Requirements
 
 Needs to have the following:
-PyQt6 pyqtgraph numpy pyinstaller pyserial
+- virtual env like venv or conda
+- git
 
-Install with the following:
+## Installation 
+Clone the repository
 ```bash
-pip install PyQt6 pyqtgraph numpy pyinstaller pyserial dash plotly flash pandas opencv-python
+git clone https://github.com/FIU-SEDS/Orbiview.git
 ```
-
-Make sure you have the most recent version of pip by updating:
+Create a conda environment using the environment.yml file provided:
 ```bash
-python -m pip install --upgrade pip
+conda env create -f environment.yml
+```
+Actviate environment:
+```bash
+conda activate orbiview
 ```
 
 ## Commenting Standards
