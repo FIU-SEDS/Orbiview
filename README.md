@@ -5,9 +5,10 @@ Orbview is a minimalist dashboard system designed to provide real-time data visu
 ## UI Design:
 
 ### Dashboard (Technical Team View Only)
+Orizaba_dashboard.py:
 ![Version 2.0 of dashboard](assets/dash.png)
 
-
+Orizaba_frontend.py
 ### Livestream (Public View)
 ![Latest version of hud](assets/orizaba_livestream.png)
 
