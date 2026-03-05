@@ -11,6 +11,11 @@ from PyQt6.QtGui import QFont, QColor
 import pyqtgraph as pg
 import os
 from serial.tools import list_ports
+import subprocess
+from pathlib import Path
+
+if __name__ == "__main__":
+    subprocess.run([sys.executable, "orizaba_dashboard.py"], cwd=str(Path(__file__).parent))
 
 class PortSelectionDialog(QDialog):
     """Dialog for selecting a serial port"""
